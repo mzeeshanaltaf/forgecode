@@ -1,0 +1,19 @@
+{
+  "name": "lightcode",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:server": "bun --filter server dev",
+    "dev:cli": "cd apps/cli && bun run dev",
+    "build": "bun --filter '*' build"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.6.0"
+  }
+}
