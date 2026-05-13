@@ -30,6 +30,8 @@ Bun-workspace monorepo. Two runnable apps live under `apps/`; shared libraries (
 
 `src/index.tsx` calls `createCliRenderer()` from `@opentui/core` and renders a React tree via `createRoot()` from `@opentui/react`. JSX is configured per-package (`jsx: react-jsx`, `jsxImportSource: @opentui/react`) — that's why `cli/tsconfig.json` has overrides while `server/tsconfig.json` does not.
 
+**Always invoke the `opentui` skill before writing or modifying anything in `apps/cli`.** It carries the canonical reference for components (`<box>`, `<text>`, `<input>`, `<textarea>`, `<select>`, etc.), hooks (`useKeyboard`, `useRenderer`), keybinding APIs, focus rules, and known gotchas. Don't guess prop names or behavior — load the skill, check the relevant `references/` file, then code.
+
 OpenTUI takes over the terminal (alternate screen + raw input). Two consequences worth remembering:
 
 - **Don't run the TUI via `bun --filter`.** `--filter` pipes child stdio so it can multiplex output across workspaces; that breaks TTY access and the TUI appears to hang. `dev:cli` therefore uses `cd apps/cli && bun run dev` instead. Filter-style scripts are fine for the server (no TTY needed).

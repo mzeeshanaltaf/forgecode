@@ -1,17 +1,14 @@
-import { createCliRenderer, TextAttributes } from "@opentui/core";
+import { createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
-import { APP_NAME } from "@lightcode/shared";
+import { App } from "./app";
 
-function App() {
-  return (
-    <box alignItems="center" justifyContent="center" flexGrow={1}>
-      <box justifyContent="center" alignItems="flex-end">
-        <ascii-font font="tiny" text={APP_NAME} />
-        <text attributes={TextAttributes.DIM}>What will you build?</text>
-      </box>
-    </box>
-  );
-}
-
-const renderer = await createCliRenderer();
+const renderer = await createCliRenderer({
+  useKittyKeyboard: {
+    disambiguate: true,
+    alternateKeys: true,
+    events: true,
+    allKeysAsEscapes: true,
+    reportText: true,
+  },
+});
 createRoot(renderer).render(<App />);
