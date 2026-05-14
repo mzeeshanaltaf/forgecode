@@ -5,7 +5,7 @@ import { APP_NAME } from "@lightcode/shared";
 const routes = new Hono()
   .use(logger())
   .get("/", (c) => c.json({ name: `${APP_NAME}-server`, status: "ok" as const }))
-  .get("/health", (c) => c.json({ status: "ok" as const, uptime: process.uptime() }));
+  .get("/health", (c) => c.json({ status: "ok" as const, uptime: process.uptime()}));
 
 export type AppType = typeof routes;
 
