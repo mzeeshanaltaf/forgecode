@@ -1,18 +1,16 @@
 import { TextAttributes } from "@opentui/core";
+import { chatLocationStateSchema } from "@lightcode/shared";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { PromptTextarea } from "../components/prompt-textarea";
-
-const HOME_ALIASES = new Set(["/home", "/index"]);
 
 export function RootLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const handleSubmit = (value: string) => {
-    const command = value.trim();
-    if (!command.startsWith("/")) return;
-    const path = HOME_ALIASES.has(command.toLowerCase()) ? "/" : command;
-    navigate(path);
+    const parsed = chatLocationStateSchema.safeParse({ input: value });
+    if (!parsed.success) return;
+    navigate("/chat", { state: parsed.data });
   };
 
   return (

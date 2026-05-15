@@ -37,6 +37,41 @@ OpenTUI takes over the terminal (alternate screen + raw input). Two consequences
 - **Don't run the TUI via `bun --filter`.** `--filter` pipes child stdio so it can multiplex output across workspaces; that breaks TTY access and the TUI appears to hang. `dev:cli` therefore uses `cd apps/cli && bun run dev` instead. Filter-style scripts are fine for the server (no TTY needed).
 - **Never call `process.exit()` directly** inside the CLI — it skips terminal restoration and leaves the user's shell in a broken state (alt screen still active, raw mode still on). Use `renderer.destroy()`; `exitOnCtrlC: true` handles the common case.
 
+### Client → server calls
+
+When the CLI needs to hit a server route, **always go through the Hono RPC client** (`apps/cli/src/lib/client.ts`) — never hand-write `fetch("http://localhost:3000/...")` or hardcode URLs at call sites. The RPC client is constructed with `hc<AppType>(baseUrl)` against the server's exported `AppType`, so routes, methods, params, and response shapes stay type-checked end-to-end as the server changes.
+
+Use `client.<route>.$url()` to derive the URL (e.g. when handing it to a third-party hook like `useCompletion`) and `client.<route>.$post(...)` / `$get(...)` for the actual call. If a new route is added on the server, keep the chained `Hono()` form in `apps/server/src/index.ts` so `typeof routes` continues to carry the new route into `AppType`.
+
+```ts
+// apps/cli/src/screens/chat.tsx
+import { client } from "../lib/client";
+
+useCompletion({
+  api: client.generate.$url().toString(),
+  streamProtocol: "text",
+});
+```
+
+### Validation
+
+Use **zod schemas** for all runtime validation across both `apps/cli` and `apps/server` — never `as` casts or hand-rolled type guards for data crossing a boundary (router state, HTTP requests/responses, env vars, file I/O, IPC). Define the schema once, derive the TypeScript type with `z.infer`, and `parse`/`safeParse` at the boundary.
+
+Shared schemas live in `packages/shared/src/schemas/` and are re-exported from `@lightcode/shared` so the CLI and server agree on shape. App-local schemas (only one side consumes them) may live next to their consumer, but still go through zod.
+
+```ts
+// packages/shared/src/schemas/chat.ts
+import { z } from "zod";
+export const chatLocationStateSchema = z.object({ input: z.string() });
+export type ChatLocationState = z.infer<typeof chatLocationStateSchema>;
+```
+
+```ts
+// apps/cli/src/screens/chat.tsx
+const parsed = chatLocationStateSchema.safeParse(location.state);
+const input = parsed.success ? parsed.data.input : "";
+```
+
 ### TypeScript configuration
 
 Three-layer setup:

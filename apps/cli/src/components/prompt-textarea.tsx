@@ -62,7 +62,7 @@ export function PromptTextarea({ onSubmit }: PromptTextareaProps) {
             ref={textareaRef}
             focused
             wrapMode="word"
-            placeholder="Type /home, /about, /settings — or describe what to build..."
+            placeholder="Press Enter to open chat..."
             flexGrow={1}
             height={visibleLines}
             onSubmit={handleSubmit}

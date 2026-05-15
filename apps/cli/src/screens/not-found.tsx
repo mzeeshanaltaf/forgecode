@@ -1,16 +1,16 @@
 import { TextAttributes } from "@opentui/core";
+import { useLocation } from "react-router";
 
 export function NotFound() {
+  const location = useLocation();
   return (
-    <box alignItems="center" justifyContent="center" flexGrow={1}>
-      <box flexDirection="column" alignItems="center">
-        <text fg="red" attributes={TextAttributes.BOLD}>
-          Screen Not Found
-        </text>
-        <text attributes={TextAttributes.DIM}>
-          Type /home to go back to the home screen
-        </text>
-      </box>
+    <box flexDirection="column" flexGrow={1}>
+      <text fg="red" attributes={TextAttributes.BOLD}>
+        Not Found
+      </text>
+      <text attributes={TextAttributes.DIM}>
+        no route matches {location.pathname}
+      </text>
     </box>
   );
 }
