@@ -34,8 +34,12 @@ Bun-workspace monorepo. Two runnable apps live under `apps/`; shared libraries (
 
 OpenTUI takes over the terminal (alternate screen + raw input). Two consequences worth remembering:
 
-- **Don't run the TUI via `bun --filter`.** `--filter` pipes child stdio so it can multiplex output across workspaces; that breaks TTY access and the TUI appears to hang. `dev:cli` therefore uses `cd apps/cli && bun run dev` instead. Filter-style scripts are fine for the server (no TTY needed).
+- **Don't run the TUI via `bun --filter`.** `--filter` pipes child stdio so it can multiplex output across workspaces; that breaks TTY access and the TUI appears to hang. Invoke `bun --watch run apps/cli/src/index.tsx` directly from the repo root instead (which is what `dev:cli` does). Filter-style scripts are fine for non-TTY workloads.
 - **Never call `process.exit()` directly** inside the CLI — it skips terminal restoration and leaves the user's shell in a broken state (alt screen still active, raw mode still on). Use `renderer.destroy()`; `exitOnCtrlC: true` handles the common case.
+
+### Dev watch must run from the repo root
+
+`bun --watch` only watches files **inside the cwd**. If a dev script chdirs into a workspace (e.g. `cd apps/server && bun --watch run src/index.ts`), Bun emits `File … is not in the project directory and will not be watched` for every import from `packages/shared/**`, and edits to shared code don't trigger a reload. The root `dev:server` and `dev:cli` scripts therefore run from the repo root with explicit entry paths so the whole tree is watched. The server uses `--env-file=apps/server/.env` because Bun's auto-loader only picks up `.env` from the cwd. Keep this pattern when adding new dev scripts.
 
 ### Client → server calls
 

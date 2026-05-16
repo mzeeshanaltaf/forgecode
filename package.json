@@ -8,8 +8,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:server": "bun --filter server dev",
-    "dev:cli": "cd apps/cli && bun run dev",
+    "dev:server": "bun --watch --env-file=apps/server/.env run apps/server/src/index.ts",
+    "dev:cli": "bun --watch run apps/cli/src/index.tsx",
     "build": "bun --filter '*' build"
   },
   "devDependencies": {

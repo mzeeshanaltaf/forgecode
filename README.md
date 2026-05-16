@@ -8,7 +8,7 @@ A monorepo built with Bun workspaces, featuring a lightweight Hono API server an
 lightcode/
 ├── apps/
 │   ├── server/   # Hono HTTP server (Bun native)
-│   └── cli/      # OpenTUI welcome screen (React reconciler)
+│   └── cli/      # OpenTUI chat interface (React reconciler)
 ├── packages/
 │   └── shared/   # Shared constants and types (@lightcode/shared)
 ├── tsconfig.base.json
@@ -31,7 +31,7 @@ bun install
 # Hono server — http://localhost:3000
 bun run dev:server
 
-# OpenTUI terminal app (Ctrl+C to exit)
+# OpenTUI chat app (Ctrl+C to exit)
 bun run dev:cli
 ```
 

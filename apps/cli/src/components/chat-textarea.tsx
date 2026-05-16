@@ -16,11 +16,11 @@ const MAX_VISIBLE_LINES = 7;
 const BOX_BORDER_ROWS = 2;
 const PROMPT_WIDTH = 64;
 
-interface PromptTextareaProps {
+interface ChatTextareaProps {
   onSubmit: (value: string) => void;
 }
 
-export function PromptTextarea({ onSubmit }: PromptTextareaProps) {
+export function ChatTextarea({ onSubmit }: ChatTextareaProps) {
   const textareaRef = useRef<TextareaRenderable | null>(null);
   const [lineCount, setLineCount] = useState(1);
   const [scrollY, setScrollY] = useState(0);

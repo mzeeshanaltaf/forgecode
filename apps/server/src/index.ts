@@ -1,25 +1,8 @@
 import { Hono } from "hono";
 import { logger } from "hono/logger";
-import { openai } from "@ai-sdk/openai";
-import { streamText } from "ai";
-import { APP_NAME, generateRequestSchema } from "@lightcode/shared";
+import { chatRoute } from "./routes/chat";
 
-const routes = new Hono()
-  .use(logger())
-  .get("/", (c) => c.json({ name: `${APP_NAME}-server`, status: "ok" as const }))
-  .get("/health", (c) => c.json({ status: "ok" as const, uptime: process.uptime() }))
-  .post("/generate", async (c) => {
-    const body = await c.req.json().catch(() => null);
-    const parsed = generateRequestSchema.safeParse(body);
-    if (!parsed.success) {
-      return c.json({ error: "invalid request", issues: parsed.error.issues }, 400);
-    }
-    const result = streamText({
-      model: openai("gpt-5-mini"),
-      prompt: parsed.data.prompt,
-    });
-    return result.toTextStreamResponse();
-  });
+const routes = new Hono().use(logger()).route("/chat", chatRoute);
 
 export type AppType = typeof routes;
 
