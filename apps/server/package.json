@@ -7,12 +7,22 @@
   "scripts": {
     "dev": "bun --watch run src/index.ts",
     "start": "bun run src/index.ts",
-    "build": "bun build src/index.ts --target bun --outdir dist"
+    "build": "bun build src/index.ts --target bun --outdir dist",
+    "db:generate": "bunx --bun prisma generate",
+    "db:push": "bunx --bun prisma db push",
+    "db:studio": "bunx --bun prisma studio"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.63",
     "@lightcode/shared": "workspace:*",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
     "ai": "^6.0.182",
-    "hono": "^4.6.0"
+    "hono": "^4.6.0",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0",
+    "prisma": "^7.8.0"
   }
 }

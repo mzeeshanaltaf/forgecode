@@ -1,0 +1,74 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated"
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages  Message[]
+  toolCalls ToolCall[]
+  errors    SessionError[]
+}
+
+model Message {
+  id        String      @id @default(cuid())
+  sessionId String
+  clientId  String
+  role      MessageRole
+  model     String?
+  parts     Json
+  createdAt DateTime    @default(now())
+
+  session   Session    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  toolCalls ToolCall[]
+
+  @@unique([sessionId, clientId])
+  @@index([sessionId, createdAt])
+}
+
+enum MessageRole {
+  system
+  user
+  assistant
+}
+
+model ToolCall {
+  id               String   @id @default(cuid())
+  sessionId        String
+  messageId        String
+  toolCallId       String
+  toolName         String
+  state            String
+  input            Json?
+  output           Json?
+  errorText        String?
+  providerExecuted Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, toolCallId])
+  @@index([sessionId, toolName])
+  @@index([state])
+}
+
+model SessionError {
+  id        String   @id @default(cuid())
+  sessionId String
+  message   String
+  stack     String?
+  createdAt DateTime @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}

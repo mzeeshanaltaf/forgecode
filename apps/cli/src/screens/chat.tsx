@@ -1,8 +1,8 @@
-import { chatLocationStateSchema } from "@lightcode/shared";
+import { chatLocationStateSchema, sessionMessagesResponseSchema } from "@lightcode/shared";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { useEffect, useMemo, useRef } from "react";
-import { useLocation } from "react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { TextAttributes } from "@opentui/core";
 import { ChatError } from "../components/chat-error";
 import { ChatMessage } from "../components/chat-message";
@@ -18,15 +18,74 @@ function hasVisibleContent(message: UIMessage): boolean {
 }
 
 export function Chat() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [history, setHistory] = useState<UIMessage[] | null>(null);
+
+  useEffect(() => {
+    if (!id) {
+      navigate("/", { replace: true });
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const response = await client.sessions[":id"].messages.$get({ param: { id } });
+      if (cancelled) return;
+      if (response.status === 404) {
+        navigate("/", { replace: true });
+        return;
+      }
+      const json = await response.json();
+      const parsed = sessionMessagesResponseSchema.safeParse(json);
+      if (!parsed.success) {
+        navigate("/", { replace: true });
+        return;
+      }
+      setHistory(parsed.data.messages as UIMessage[]);
+    })().catch(() => {
+      if (!cancelled) navigate("/", { replace: true });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, navigate]);
+
+  if (!id || history === null) {
+    return (
+      <box flexGrow={1} padding={1}>
+        <text fg="#888888">Loading session…</text>
+      </box>
+    );
+  }
+
+  return <ChatSession sessionId={id} initialMessages={history} />;
+}
+
+interface ChatSessionProps {
+  sessionId: string;
+  initialMessages: UIMessage[];
+}
+
+function ChatSession({ sessionId, initialMessages }: ChatSessionProps) {
   const location = useLocation();
   const parsed = chatLocationStateSchema.safeParse(location.state);
   const initialInput = parsed.success ? parsed.data.input : "";
 
   const transport = useMemo(
-    () => new DefaultChatTransport({ api: client.chat.$url().toString() }),
-    [],
+    () =>
+      new DefaultChatTransport({
+        api: client.sessions[":id"].messages.$url({ param: { id: sessionId } }).toString(),
+        prepareSendMessagesRequest: ({ messages, body }) => ({
+          body: { ...body, message: messages[messages.length - 1] },
+        }),
+      }),
+    [sessionId],
   );
-  const { messages, sendMessage, status, error } = useChat({ transport });
+  const { messages, sendMessage, status, error } = useChat({
+    id: sessionId,
+    messages: initialMessages,
+    transport,
+  });
 
   useRegisterChatInput((value) => {
     if (!value.trim()) return;

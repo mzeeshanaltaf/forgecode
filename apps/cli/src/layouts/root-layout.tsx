@@ -1,22 +1,32 @@
 import { TextAttributes } from "@opentui/core";
 import { chatLocationStateSchema } from "@lightcode/shared";
+import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { ChatTextarea } from "../components/chat-textarea";
+import { client } from "../lib/client";
 import { useChatInput } from "../lib/chat-input-context";
 
 export function RootLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { submit: activeChatSubmit } = useChatInput();
+  const [creatingSession, setCreatingSession] = useState(false);
 
-  const handleSubmit = (value: string) => {
+  const handleSubmit = async (value: string) => {
     if (activeChatSubmit) {
       activeChatSubmit(value);
       return;
     }
     const parsed = chatLocationStateSchema.safeParse({ input: value });
-    if (!parsed.success) return;
-    navigate("/chat", { state: parsed.data });
+    if (!parsed.success || creatingSession) return;
+    setCreatingSession(true);
+    try {
+      const response = await client.sessions.$post();
+      const { id } = await response.json();
+      navigate(`/sessions/${id}`, { state: parsed.data });
+    } finally {
+      setCreatingSession(false);
+    }
   };
 
   return (

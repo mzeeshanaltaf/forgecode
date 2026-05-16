@@ -10,7 +10,7 @@ export const router = createMemoryRouter([
     element: <RootLayout />,
     children: [
       { index: true, element: <Home /> },
-      { path: "chat", element: <Chat /> },
+      { path: "sessions/:id", element: <Chat /> },
       { path: "*", element: <NotFound /> },
     ],
   },

@@ -10,7 +10,10 @@
   "scripts": {
     "dev:server": "bun --watch --env-file=apps/server/.env run apps/server/src/index.ts",
     "dev:cli": "bun --watch run apps/cli/src/index.tsx",
-    "build": "bun --filter '*' build"
+    "build": "bun --filter '*' build",
+    "db:generate": "bun --filter server db:generate",
+    "db:push": "bun --filter server db:push",
+    "db:studio": "bun --filter server db:studio"
   },
   "devDependencies": {
     "@types/bun": "latest",
