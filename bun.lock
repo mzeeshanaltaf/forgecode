@@ -16,8 +16,10 @@
       "dependencies": {
         "@ai-sdk/react": "^3.0.184",
         "@lightcode/shared": "workspace:*",
+        "@lightcode/tools": "workspace:*",
         "@opentui/core": "^0.2.1",
         "@opentui/react": "^0.2.1",
+        "ai": "^6.0.182",
         "hono": "^4.6.0",
         "react": "^19.2.4",
         "react-router": "^7.0.0",
@@ -36,6 +38,7 @@
       "dependencies": {
         "@ai-sdk/openai": "^3.0.63",
         "@lightcode/shared": "workspace:*",
+        "@lightcode/tools": "workspace:*",
         "@prisma/adapter-pg": "^7.8.0",
         "@prisma/client": "^7.8.0",
         "ai": "^6.0.182",
@@ -49,6 +52,13 @@
     },
     "packages/shared": {
       "name": "@lightcode/shared",
+      "version": "0.0.1",
+      "dependencies": {
+        "zod": "^4.4.3",
+      },
+    },
+    "packages/tools": {
+      "name": "@lightcode/tools",
       "version": "0.0.1",
       "dependencies": {
         "zod": "^4.4.3",
@@ -77,6 +87,8 @@
     "@kurkle/color": ["@kurkle/color@0.3.4", "", {}, "sha512-M5UknZPHRu3DEDWoipU6sE8PdkZ6Z/S+v4dD+Ke8IaNlpdSQah50lz1KtcFBa2vsdOnwbbnxJwVM4wty6udA5w=="],
 
     "@lightcode/shared": ["@lightcode/shared@workspace:packages/shared"],
+
+    "@lightcode/tools": ["@lightcode/tools@workspace:packages/tools"],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.1", "", {}, "sha512-gLyJlPHPZYdAk1JENA9LeHejZe1Ti77/pTeFm/nMXmQH/HFZlcS/O2XJB+L8fkbrNSqhdtlvjBVjxwUYanNH5Q=="],
 

@@ -15,6 +15,7 @@
   "dependencies": {
     "@ai-sdk/openai": "^3.0.63",
     "@lightcode/shared": "workspace:*",
+    "@lightcode/tools": "workspace:*",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "ai": "^6.0.182",

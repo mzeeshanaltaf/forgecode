@@ -1,6 +1,11 @@
 import { chatLocationStateSchema, sessionMessagesResponseSchema } from "@lightcode/shared";
+import { type ToolName } from "@lightcode/tools";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type UIMessage } from "ai";
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithToolCalls,
+  type UIMessage,
+} from "ai";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { TextAttributes } from "@opentui/core";
@@ -8,6 +13,7 @@ import { ChatError } from "../components/chat-error";
 import { ChatMessage } from "../components/chat-message";
 import { client } from "../lib/client";
 import { useRegisterChatInput } from "../lib/chat-input-context";
+import { handlers } from "@lightcode/tools/handlers";
 
 function hasVisibleContent(message: UIMessage): boolean {
   return message.parts.some((p) => {
@@ -71,20 +77,54 @@ function ChatSession({ sessionId, initialMessages }: ChatSessionProps) {
   const parsed = chatLocationStateSchema.safeParse(location.state);
   const initialInput = parsed.success ? parsed.data.input : "";
 
+  const cwd = useMemo(() => process.cwd(), []);
+
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: client.sessions[":id"].messages.$url({ param: { id: sessionId } }).toString(),
         prepareSendMessagesRequest: ({ messages, body }) => ({
-          body: { ...body, message: messages[messages.length - 1] },
+          body: { ...body, cwd, message: messages[messages.length - 1] },
         }),
       }),
-    [sessionId],
+    [sessionId, cwd],
   );
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, sendMessage, status, error, addToolOutput } = useChat({
     id: sessionId,
     messages: initialMessages,
     transport,
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    async onToolCall({ toolCall }) {
+      if (toolCall.dynamic) return;
+      const name = toolCall.toolName as ToolName;
+      const handler = handlers[name] as
+        | ((input: unknown, ctx: { cwd: string }) => Promise<unknown>)
+        | undefined;
+      if (!handler) {
+        addToolOutput({
+          tool: name,
+          toolCallId: toolCall.toolCallId,
+          state: "output-error",
+          errorText: `unknown tool: ${name}`,
+        });
+        return;
+      }
+      try {
+        const output = await handler(toolCall.input, { cwd });
+        addToolOutput({
+          tool: name,
+          toolCallId: toolCall.toolCallId,
+          output,
+        });
+      } catch (err) {
+        addToolOutput({
+          tool: name,
+          toolCallId: toolCall.toolCallId,
+          state: "output-error",
+          errorText: err instanceof Error ? err.message : String(err),
+        });
+      }
+    },
   });
 
   useRegisterChatInput((value) => {

@@ -3,14 +3,19 @@ import { openai } from "@ai-sdk/openai";
 import {
   convertToModelMessages,
   generateId,
+  generateText,
+  NoSuchToolError,
+  Output,
   stepCountIs,
-  streamText,
   tool,
+  ToolLoopAgent,
+  type ToolSet,
   type UIMessage,
   type UIMessagePart,
 } from "ai";
 import { z } from "zod";
 import { postMessageRequestSchema } from "@lightcode/shared";
+import { tools as agentTools } from "@lightcode/tools";
 import { prisma } from "../db";
 import { MessageRole, type Prisma } from "../../generated/client";
 
@@ -64,6 +69,67 @@ function extractToolRows(parts: readonly StoredPart[]): ToolPartRow[] {
   return rows;
 }
 
+const baseInstructions = [
+  "You are a coding agent.",
+  "You have file and shell tools that execute on the user's machine; the server itself has no filesystem access.",
+  "All paths are relative to the user's working directory. Do not assume any path outside it is accessible — the CLI will reject such calls.",
+  "Prefer reading files before editing them. When using editFile, include enough surrounding context in oldString to make the match unique.",
+].join(" ");
+
+const toolDefs: ToolSet = Object.fromEntries(
+  Object.entries(agentTools).map(([name, t]) => [
+    name,
+    tool({
+      description: t.description,
+      inputSchema: t.inputSchema as never,
+    }),
+  ]),
+);
+
+const callOptionsSchema = z.object({ cwd: z.string().min(1) });
+
+const codingAgent = new ToolLoopAgent({
+  model: openai(MODEL_ID),
+  instructions: baseInstructions,
+  tools: toolDefs,
+  stopWhen: stepCountIs(16),
+  providerOptions: {
+    openai: { reasoningSummary: "auto", serviceTier: SERVICE_TIER },
+  },
+  callOptionsSchema,
+  prepareCall: ({ options, ...settings }) => ({
+    ...settings,
+    instructions: `${settings.instructions ?? ""}\n\nWorking directory: ${options.cwd}`,
+  }),
+  experimental_repairToolCall: async ({ toolCall, tools: toolset, error }) => {
+    if (NoSuchToolError.isInstance(error)) return null;
+    const matched = (toolset as Record<string, { inputSchema?: unknown }>)[
+      toolCall.toolName
+    ];
+    if (!matched?.inputSchema) return null;
+    try {
+      const repair = await generateText({
+        model: openai(MODEL_ID),
+        output: Output.object({ schema: matched.inputSchema as never }),
+        prompt: [
+          `The previous call to tool "${toolCall.toolName}" had malformed input.`,
+          `Original input: ${
+            typeof toolCall.input === "string"
+              ? toolCall.input
+              : JSON.stringify(toolCall.input)
+          }`,
+          `Error: ${error.message}`,
+          "Return a corrected input that matches the tool's input schema.",
+        ].join("\n"),
+      });
+      return { ...toolCall, input: JSON.stringify(repair.output) };
+    } catch (repairErr) {
+      console.error("tool-call repair failed", repairErr);
+      return null;
+    }
+  },
+});
+
 function roleOf(role: string): MessageRole {
   switch (role) {
     case "user":
@@ -113,14 +179,35 @@ export const sessionsRoute = new Hono()
     }
 
     const incoming = parsed.data.message as UIMessage;
-    await prisma.message.create({
-      data: {
+    const cwd = parsed.data.cwd;
+
+    const upserted = await prisma.message.upsert({
+      where: { sessionId_clientId: { sessionId: id, clientId: incoming.id } },
+      update: {
+        role: roleOf(incoming.role),
+        parts: incoming.parts as unknown as Prisma.InputJsonValue,
+      },
+      create: {
         sessionId: id,
         clientId: incoming.id,
         role: roleOf(incoming.role),
         parts: incoming.parts as unknown as Prisma.InputJsonValue,
       },
     });
+
+    // Re-sync auxiliary tool-call rows from the (possibly updated) parts so that
+    // the side table reflects the latest input/output state for this message.
+    const incomingToolRows = extractToolRows(incoming.parts as StoredPart[]);
+    await prisma.toolCall.deleteMany({ where: { messageId: upserted.id } });
+    if (incomingToolRows.length > 0) {
+      await prisma.toolCall.createMany({
+        data: incomingToolRows.map((row) => ({
+          sessionId: id,
+          messageId: upserted.id,
+          ...row,
+        })),
+      });
+    }
 
     const historyRows = await prisma.message.findMany({
       where: { sessionId: id },
@@ -132,37 +219,20 @@ export const sessionsRoute = new Hono()
       parts: row.parts as unknown as UIMessage["parts"],
     }));
 
-    const result = streamText({
-      model: openai(MODEL_ID),
-      messages: await convertToModelMessages(history),
-      providerOptions: {
-        openai: { reasoningSummary: "auto", serviceTier: SERVICE_TIER },
-      },
-      tools: {
-        getCurrentTime: tool<{ timezone?: string }, { now: string }>({
-          description: "Get the current server time as an ISO string.",
-          inputSchema: z.object({
-            timezone: z
-              .string()
-              .optional()
-              .describe("IANA timezone name; ignored, always returns UTC."),
-          }),
-          execute: async () => ({ now: new Date().toISOString() }),
-        }),
-        alwaysFails: tool<{ reason: string }, { ok: false }>({
-          description:
-            "Diagnostic tool that always throws. Call this to test error-state rendering.",
-          inputSchema: z.object({
-            reason: z.string().describe("Why you are testing the failure path."),
-          }),
-          execute: async (): Promise<{ ok: false }> => {
-            throw new Error("intentional failure for tool-error rendering");
-          },
-        }),
-      },
-      stopWhen: stepCountIs(4),
-      onError: ({ error }) => {
-        const err = error instanceof Error ? error : new Error(String(error));
+    const modelMessages = await convertToModelMessages(history);
+
+    const result = await codingAgent.stream({
+      messages: modelMessages,
+      options: { cwd },
+    });
+
+    return result.toUIMessageStreamResponse({
+      sendReasoning: true,
+      originalMessages: history,
+      generateMessageId: generateId,
+      onError(streamErr) {
+        const err =
+          streamErr instanceof Error ? streamErr : new Error(String(streamErr));
         void prisma.sessionError
           .create({
             data: {
@@ -174,13 +244,8 @@ export const sessionsRoute = new Hono()
           .catch((dbErr) => {
             console.error("failed to persist session error", dbErr);
           });
+        return err.message;
       },
-    });
-
-    return result.toUIMessageStreamResponse({
-      sendReasoning: true,
-      originalMessages: history,
-      generateMessageId: generateId,
       onFinish: async ({ responseMessage }) => {
         try {
           const created = await prisma.message.create({

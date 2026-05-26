@@ -16,6 +16,7 @@ export const uiMessageSchema = z.looseObject({
 
 export const postMessageRequestSchema = z.object({
   message: uiMessageSchema,
+  cwd: z.string().min(1),
 });
 
 export type PostMessageRequest = z.infer<typeof postMessageRequestSchema>;
