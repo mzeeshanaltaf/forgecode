@@ -1,134 +1,12 @@
 import { Hono } from "hono";
-import { openai } from "@ai-sdk/openai";
 import {
-  convertToModelMessages,
-  generateId,
-  generateText,
-  NoSuchToolError,
-  Output,
-  stepCountIs,
-  tool,
-  ToolLoopAgent,
-  type ToolSet,
-  type UIMessage,
-  type UIMessagePart,
-} from "ai";
-import { z } from "zod";
-import { postMessageRequestSchema } from "@lightcode/shared";
-import { tools as agentTools } from "@lightcode/tools";
+  CODING_AGENT_MODEL_ID,
+  runCodingTurn,
+} from "@lightcode/ai/agent";
+import { extractToolRows, type StoredPart } from "@lightcode/ai/parts";
+import { postMessageRequestSchema, type UIMessage } from "@lightcode/ai/messages";
 import { prisma } from "../db";
 import { MessageRole, type Prisma } from "../../generated/client";
-
-const MODEL_ID = "gpt-5-mini";
-
-const SERVICE_TIER = z
-  .enum(["default", "auto", "flex", "priority"])
-  .optional()
-  .parse(process.env.OPENAI_SERVICE_TIER || undefined);
-
-type StoredPart = UIMessagePart<Record<string, unknown>, Record<string, never>>;
-
-type ToolPartRow = {
-  toolCallId: string;
-  toolName: string;
-  state: string;
-  input: Prisma.InputJsonValue | undefined;
-  output: Prisma.InputJsonValue | undefined;
-  errorText: string | null;
-  providerExecuted: boolean;
-};
-
-function extractToolRows(parts: readonly StoredPart[]): ToolPartRow[] {
-  const rows: ToolPartRow[] = [];
-  for (const part of parts) {
-    const isDynamic = part.type === "dynamic-tool";
-    const isStatic = part.type.startsWith("tool-");
-    if (!isDynamic && !isStatic) continue;
-    const p = part as unknown as {
-      type: string;
-      toolName?: string;
-      toolCallId?: string;
-      state?: string;
-      input?: unknown;
-      output?: unknown;
-      errorText?: string;
-      providerExecuted?: boolean;
-    };
-    if (!p.toolCallId || !p.state) continue;
-    const toolName = isDynamic ? p.toolName ?? "unknown" : part.type.slice(5);
-    rows.push({
-      toolCallId: p.toolCallId,
-      toolName,
-      state: p.state,
-      input: p.input === undefined ? undefined : (p.input as Prisma.InputJsonValue),
-      output: p.output === undefined ? undefined : (p.output as Prisma.InputJsonValue),
-      errorText: p.errorText ?? null,
-      providerExecuted: p.providerExecuted ?? false,
-    });
-  }
-  return rows;
-}
-
-const baseInstructions = [
-  "You are a coding agent.",
-  "You have file and shell tools that execute on the user's machine; the server itself has no filesystem access.",
-  "All paths are relative to the user's working directory. Do not assume any path outside it is accessible — the CLI will reject such calls.",
-  "Prefer reading files before editing them. When using editFile, include enough surrounding context in oldString to make the match unique.",
-].join(" ");
-
-const toolDefs: ToolSet = Object.fromEntries(
-  Object.entries(agentTools).map(([name, t]) => [
-    name,
-    tool({
-      description: t.description,
-      inputSchema: t.inputSchema as never,
-    }),
-  ]),
-);
-
-const callOptionsSchema = z.object({ cwd: z.string().min(1) });
-
-const codingAgent = new ToolLoopAgent({
-  model: openai(MODEL_ID),
-  instructions: baseInstructions,
-  tools: toolDefs,
-  stopWhen: stepCountIs(16),
-  providerOptions: {
-    openai: { reasoningSummary: "auto", serviceTier: SERVICE_TIER },
-  },
-  callOptionsSchema,
-  prepareCall: ({ options, ...settings }) => ({
-    ...settings,
-    instructions: `${settings.instructions ?? ""}\n\nWorking directory: ${options.cwd}`,
-  }),
-  experimental_repairToolCall: async ({ toolCall, tools: toolset, error }) => {
-    if (NoSuchToolError.isInstance(error)) return null;
-    const matched = (toolset as Record<string, { inputSchema?: unknown }>)[
-      toolCall.toolName
-    ];
-    if (!matched?.inputSchema) return null;
-    try {
-      const repair = await generateText({
-        model: openai(MODEL_ID),
-        output: Output.object({ schema: matched.inputSchema as never }),
-        prompt: [
-          `The previous call to tool "${toolCall.toolName}" had malformed input.`,
-          `Original input: ${
-            typeof toolCall.input === "string"
-              ? toolCall.input
-              : JSON.stringify(toolCall.input)
-          }`,
-          `Error: ${error.message}`,
-          "Return a corrected input that matches the tool's input schema.",
-        ].join("\n"),
-      });
-      return { ...toolCall, input: JSON.stringify(repair.output) };
-    } catch (repairErr) {
-      console.error("tool-call repair failed", repairErr);
-      return null;
-    }
-  },
-});
 
 function roleOf(role: string): MessageRole {
   switch (role) {
@@ -204,7 +82,13 @@ export const sessionsRoute = new Hono()
         data: incomingToolRows.map((row) => ({
           sessionId: id,
           messageId: upserted.id,
-          ...row,
+          toolCallId: row.toolCallId,
+          toolName: row.toolName,
+          state: row.state,
+          input: row.input === undefined ? undefined : (row.input as Prisma.InputJsonValue),
+          output: row.output === undefined ? undefined : (row.output as Prisma.InputJsonValue),
+          errorText: row.errorText,
+          providerExecuted: row.providerExecuted,
         })),
       });
     }
@@ -219,21 +103,11 @@ export const sessionsRoute = new Hono()
       parts: row.parts as unknown as UIMessage["parts"],
     }));
 
-    const modelMessages = await convertToModelMessages(history);
-
-    const result = await codingAgent.stream({
-      messages: modelMessages,
-      options: { cwd },
-    });
-
-    return result.toUIMessageStreamResponse({
-      sendReasoning: true,
-      originalMessages: history,
-      generateMessageId: generateId,
-      onError(streamErr) {
-        const err =
-          streamErr instanceof Error ? streamErr : new Error(String(streamErr));
-        void prisma.sessionError
+    return runCodingTurn({
+      history,
+      cwd,
+      onError: async (err) => {
+        await prisma.sessionError
           .create({
             data: {
               sessionId: id,
@@ -244,32 +118,33 @@ export const sessionsRoute = new Hono()
           .catch((dbErr) => {
             console.error("failed to persist session error", dbErr);
           });
-        return err.message;
       },
       onFinish: async ({ responseMessage }) => {
-        try {
-          const created = await prisma.message.create({
-            data: {
+        const created = await prisma.message.create({
+          data: {
+            sessionId: id,
+            clientId: responseMessage.id,
+            role: roleOf(responseMessage.role),
+            model: CODING_AGENT_MODEL_ID,
+            parts: responseMessage.parts as unknown as Prisma.InputJsonValue,
+          },
+        });
+        const toolRows = extractToolRows(responseMessage.parts as StoredPart[]);
+        if (toolRows.length > 0) {
+          await prisma.toolCall.createMany({
+            data: toolRows.map((row) => ({
               sessionId: id,
-              clientId: responseMessage.id,
-              role: roleOf(responseMessage.role),
-              model: MODEL_ID,
-              parts: responseMessage.parts as unknown as Prisma.InputJsonValue,
-            },
+              messageId: created.id,
+              toolCallId: row.toolCallId,
+              toolName: row.toolName,
+              state: row.state,
+              input: row.input === undefined ? undefined : (row.input as Prisma.InputJsonValue),
+              output: row.output === undefined ? undefined : (row.output as Prisma.InputJsonValue),
+              errorText: row.errorText,
+              providerExecuted: row.providerExecuted,
+            })),
+            skipDuplicates: true,
           });
-          const toolRows = extractToolRows(responseMessage.parts as StoredPart[]);
-          if (toolRows.length > 0) {
-            await prisma.toolCall.createMany({
-              data: toolRows.map((row) => ({
-                sessionId: id,
-                messageId: created.id,
-                ...row,
-              })),
-              skipDuplicates: true,
-            });
-          }
-        } catch (err) {
-          console.error("failed to persist assistant message", err);
         }
       },
     });

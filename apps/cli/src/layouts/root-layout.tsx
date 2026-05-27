@@ -1,5 +1,5 @@
 import { TextAttributes } from "@opentui/core";
-import { chatLocationStateSchema } from "@lightcode/shared";
+import { chatLocationStateSchema } from "@lightcode/ai/messages";
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { ChatTextarea } from "../components/chat-textarea";

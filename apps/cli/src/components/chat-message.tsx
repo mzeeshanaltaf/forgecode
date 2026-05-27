@@ -1,11 +1,11 @@
 import { TextAttributes } from "@opentui/core";
-import type { UIMessage } from "ai";
+import type { CodingAgentUIMessage } from "@lightcode/ai";
 
 interface ChatMessageProps {
-  message: UIMessage;
+  message: CodingAgentUIMessage;
 }
 
-type MessagePart = UIMessage["parts"][number];
+type MessagePart = CodingAgentUIMessage["parts"][number];
 type ToolPart = Extract<
   MessagePart,
   { type: `tool-${string}` } | { type: "dynamic-tool" }

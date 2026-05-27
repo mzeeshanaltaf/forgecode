@@ -1,11 +1,14 @@
-import { chatLocationStateSchema, sessionMessagesResponseSchema } from "@lightcode/shared";
-import { type ToolName } from "@lightcode/tools";
-import { useChat } from "@ai-sdk/react";
+import type { CodingAgentUIMessage } from "@lightcode/ai";
 import {
-  DefaultChatTransport,
+  chatLocationStateSchema,
+  sessionMessagesResponseSchema,
+} from "@lightcode/ai/messages";
+import {
+  createChatTransport,
+  executeClientTool,
   lastAssistantMessageIsCompleteWithToolCalls,
-  type UIMessage,
-} from "ai";
+} from "@lightcode/ai/client";
+import { useChat } from "@ai-sdk/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { TextAttributes } from "@opentui/core";
@@ -13,9 +16,8 @@ import { ChatError } from "../components/chat-error";
 import { ChatMessage } from "../components/chat-message";
 import { client } from "../lib/client";
 import { useRegisterChatInput } from "../lib/chat-input-context";
-import { handlers } from "@lightcode/tools/handlers";
 
-function hasVisibleContent(message: UIMessage): boolean {
+function hasVisibleContent(message: CodingAgentUIMessage): boolean {
   return message.parts.some((p) => {
     if (p.type === "text") return p.text.length > 0;
     if (p.type === "reasoning") return p.text.length > 0;
@@ -26,7 +28,7 @@ function hasVisibleContent(message: UIMessage): boolean {
 export function Chat() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [history, setHistory] = useState<UIMessage[] | null>(null);
+  const [history, setHistory] = useState<CodingAgentUIMessage[] | null>(null);
 
   useEffect(() => {
     if (!id) {
@@ -47,7 +49,7 @@ export function Chat() {
         navigate("/", { replace: true });
         return;
       }
-      setHistory(parsed.data.messages as UIMessage[]);
+      setHistory(parsed.data.messages as CodingAgentUIMessage[]);
     })().catch(() => {
       if (!cancelled) navigate("/", { replace: true });
     });
@@ -69,7 +71,7 @@ export function Chat() {
 
 interface ChatSessionProps {
   sessionId: string;
-  initialMessages: UIMessage[];
+  initialMessages: CodingAgentUIMessage[];
 }
 
 function ChatSession({ sessionId, initialMessages }: ChatSessionProps) {
@@ -81,50 +83,19 @@ function ChatSession({ sessionId, initialMessages }: ChatSessionProps) {
 
   const transport = useMemo(
     () =>
-      new DefaultChatTransport({
-        api: client.sessions[":id"].messages.$url({ param: { id: sessionId } }).toString(),
-        prepareSendMessagesRequest: ({ messages, body }) => ({
-          body: { ...body, cwd, message: messages[messages.length - 1] },
-        }),
+      createChatTransport<CodingAgentUIMessage>({
+        url: client.sessions[":id"].messages.$url({ param: { id: sessionId } }).toString(),
+        cwd,
       }),
     [sessionId, cwd],
   );
-  const { messages, sendMessage, status, error, addToolOutput } = useChat({
+  const { messages, sendMessage, status, error, addToolOutput } = useChat<CodingAgentUIMessage>({
     id: sessionId,
     messages: initialMessages,
     transport,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-    async onToolCall({ toolCall }) {
-      if (toolCall.dynamic) return;
-      const name = toolCall.toolName as ToolName;
-      const handler = handlers[name] as
-        | ((input: unknown, ctx: { cwd: string }) => Promise<unknown>)
-        | undefined;
-      if (!handler) {
-        addToolOutput({
-          tool: name,
-          toolCallId: toolCall.toolCallId,
-          state: "output-error",
-          errorText: `unknown tool: ${name}`,
-        });
-        return;
-      }
-      try {
-        const output = await handler(toolCall.input, { cwd });
-        addToolOutput({
-          tool: name,
-          toolCallId: toolCall.toolCallId,
-          output,
-        });
-      } catch (err) {
-        addToolOutput({
-          tool: name,
-          toolCallId: toolCall.toolCallId,
-          state: "output-error",
-          errorText: err instanceof Error ? err.message : String(err),
-        });
-      }
-    },
+    onToolCall: ({ toolCall }): Promise<void> =>
+      executeClientTool<CodingAgentUIMessage>({ toolCall, cwd, addToolOutput }),
   });
 
   useRegisterChatInput((value) => {

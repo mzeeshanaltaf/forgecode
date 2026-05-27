@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export type { UIMessage } from "ai";
+
 export const chatLocationStateSchema = z.object({
   input: z.string().trim().min(1),
 });
