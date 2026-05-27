@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./agent": "./src/agent.ts",
     "./messages": "./src/messages.ts",
+    "./modes": "./src/modes.ts",
     "./parts": "./src/parts.ts",
     "./client": "./src/client.ts",
     "./tools": "./src/tools/index.ts",

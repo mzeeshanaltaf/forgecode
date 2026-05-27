@@ -1,16 +1,26 @@
 import { TextAttributes } from "@opentui/core";
+import { useKeyboard } from "@opentui/react";
 import { chatLocationStateSchema } from "@lightcode/ai/messages";
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { ChatTextarea } from "../components/chat-textarea";
 import { client } from "../lib/client";
 import { useChatInput } from "../lib/chat-input-context";
+import { useModeContext } from "../lib/mode-context";
 
 export function RootLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { submit: activeChatSubmit } = useChatInput();
+  const { cycleMode, cycleModePrev } = useModeContext();
   const [creatingSession, setCreatingSession] = useState(false);
+
+  useKeyboard((key) => {
+    if (key.name === "tab") {
+      if (key.shift) cycleModePrev();
+      else cycleMode();
+    }
+  });
 
   const handleSubmit = async (value: string) => {
     if (activeChatSubmit) {

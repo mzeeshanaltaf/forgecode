@@ -16,6 +16,7 @@ import { ChatError } from "../components/chat-error";
 import { ChatMessage } from "../components/chat-message";
 import { client } from "../lib/client";
 import { useRegisterChatInput } from "../lib/chat-input-context";
+import { useModeContext } from "../lib/mode-context";
 
 function hasVisibleContent(message: CodingAgentUIMessage): boolean {
   return message.parts.some((p) => {
@@ -80,14 +81,16 @@ function ChatSession({ sessionId, initialMessages }: ChatSessionProps) {
   const initialInput = parsed.success ? parsed.data.input : "";
 
   const cwd = useMemo(() => process.cwd(), []);
+  const { getMode } = useModeContext();
 
   const transport = useMemo(
     () =>
       createChatTransport<CodingAgentUIMessage>({
         url: client.sessions[":id"].messages.$url({ param: { id: sessionId } }).toString(),
         cwd,
+        getMode,
       }),
-    [sessionId, cwd],
+    [sessionId, cwd, getMode],
   );
   const { messages, sendMessage, status, error, addToolOutput } = useChat<CodingAgentUIMessage>({
     id: sessionId,

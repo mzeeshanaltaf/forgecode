@@ -14,6 +14,7 @@ import {
 } from "ai";
 import { z } from "zod";
 import { tools as agentTools } from "./tools";
+import { DEFAULT_MODE, modes, modeSchema, type ModeName } from "./modes";
 
 const MODEL_ID = "gpt-5-mini";
 
@@ -39,7 +40,10 @@ const toolDefs: ToolSet = Object.fromEntries(
   ]),
 );
 
-const callOptionsSchema = z.object({ cwd: z.string().min(1) });
+const callOptionsSchema = z.object({
+  cwd: z.string().min(1),
+  mode: modeSchema.default(DEFAULT_MODE),
+});
 
 export const codingAgent = new ToolLoopAgent({
   model: openai(MODEL_ID),
@@ -50,10 +54,19 @@ export const codingAgent = new ToolLoopAgent({
     openai: { reasoningSummary: "auto", serviceTier: SERVICE_TIER },
   },
   callOptionsSchema,
-  prepareCall: ({ options, ...settings }) => ({
-    ...settings,
-    instructions: `${settings.instructions ?? ""}\n\nWorking directory: ${options.cwd}`,
-  }),
+  prepareCall: ({ options, ...settings }) => {
+    const def = modes[options.mode];
+    return {
+      ...settings,
+      instructions: [
+        settings.instructions ?? "",
+        def.instructions,
+        `You are currently operating in "${def.label}" mode. The active mode can change between turns, so it may differ from earlier in this conversation. Always determine your current mode from THIS instruction — never from previous messages or your own earlier replies.`,
+        `Working directory: ${options.cwd}`,
+      ].join("\n\n"),
+      activeTools: def.tools as (keyof typeof toolDefs)[],
+    };
+  },
   experimental_repairToolCall: async ({ toolCall, tools: toolset, error }) => {
     if (NoSuchToolError.isInstance(error)) return null;
     const matched = (toolset as Record<string, { inputSchema?: unknown }>)[
@@ -90,17 +103,18 @@ export const CODING_AGENT_MODEL_ID = MODEL_ID;
 export interface RunCodingTurnParams {
   history: UIMessage[];
   cwd: string;
+  mode?: ModeName;
   onError?: (err: Error) => void | Promise<void>;
   onFinish?: (args: { responseMessage: UIMessage }) => void | Promise<void>;
 }
 
 export async function runCodingTurn(params: RunCodingTurnParams): Promise<Response> {
-  const { history, cwd, onError, onFinish } = params;
+  const { history, cwd, mode = DEFAULT_MODE, onError, onFinish } = params;
   const modelMessages = await convertToModelMessages(history);
 
   const result = await codingAgent.stream({
     messages: modelMessages,
-    options: { cwd },
+    options: { cwd, mode },
   });
 
   return result.toUIMessageStreamResponse({

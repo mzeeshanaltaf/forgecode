@@ -1,5 +1,12 @@
 import { TextAttributes, type TextareaRenderable } from "@opentui/core";
 import { useRef, useState } from "react";
+import { modes } from "@lightcode/ai/modes";
+import { useModeContext } from "../lib/mode-context";
+
+const MODE_COLORS: Record<string, string> = {
+  build: "#22C55E",
+  plan: "#3B82F6",
+};
 
 const KEY_BINDINGS: {
   name: string;
@@ -24,6 +31,8 @@ export function ChatTextarea({ onSubmit }: ChatTextareaProps) {
   const textareaRef = useRef<TextareaRenderable | null>(null);
   const [lineCount, setLineCount] = useState(1);
   const [scrollY, setScrollY] = useState(0);
+  const { mode } = useModeContext();
+  const modeDef = modes[mode];
 
   const syncFromBuffer = () => {
     const textarea = textareaRef.current;
@@ -78,6 +87,12 @@ export function ChatTextarea({ onSubmit }: ChatTextareaProps) {
             />
           )}
         </box>
+      </box>
+      <box flexDirection="row">
+        <text fg={MODE_COLORS[mode] ?? "#FFFFFF"} attributes={TextAttributes.BOLD}>
+          ● {modeDef.label}
+        </text>
+        <text attributes={TextAttributes.DIM}> · Tab to switch</text>
       </box>
       <text attributes={TextAttributes.DIM}>
         ↵ submit · Ctrl+↵ newline · Ctrl+C exit

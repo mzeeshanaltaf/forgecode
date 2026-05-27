@@ -58,6 +58,7 @@ export const sessionsRoute = new Hono()
 
     const incoming = parsed.data.message as UIMessage;
     const cwd = parsed.data.cwd;
+    const mode = parsed.data.mode;
 
     const upserted = await prisma.message.upsert({
       where: { sessionId_clientId: { sessionId: id, clientId: incoming.id } },
@@ -106,6 +107,7 @@ export const sessionsRoute = new Hono()
     return runCodingTurn({
       history,
       cwd,
+      mode,
       onError: async (err) => {
         await prisma.sessionError
           .create({

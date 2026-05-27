@@ -6,22 +6,25 @@ import {
 } from "ai";
 import { handlers } from "./tools/handlers";
 import type { ToolName } from "./tools";
+import type { ModeName } from "./modes";
 
 export { lastAssistantMessageIsCompleteWithToolCalls };
 
 export interface CreateChatTransportParams {
   url: string;
   cwd: string;
+  getMode: () => ModeName;
 }
 
 export function createChatTransport<UI_MESSAGE extends UIMessage>({
   url,
   cwd,
+  getMode,
 }: CreateChatTransportParams): DefaultChatTransport<UI_MESSAGE> {
   return new DefaultChatTransport<UI_MESSAGE>({
     api: url,
     prepareSendMessagesRequest: ({ messages, body }) => ({
-      body: { ...body, cwd, message: messages[messages.length - 1] },
+      body: { ...body, cwd, mode: getMode(), message: messages[messages.length - 1] },
     }),
   });
 }
