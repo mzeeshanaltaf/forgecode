@@ -1,4 +1,3 @@
-import { useKeyboard } from "@opentui/react";
 import {
   createContext,
   useCallback,
@@ -7,6 +6,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import {
+  KeyboardLayerPriority,
+  useKeyboardLayer,
+} from "../lib/keyboard-layers";
 
 interface DialogContextValue {
   open: (content: ReactNode) => void;
@@ -22,9 +25,19 @@ export function DialogProvider({ children }: { children: ReactNode }) {
   const open = useCallback((next: ReactNode) => setContent(next), []);
   const close = useCallback(() => setContent(null), []);
 
-  useKeyboard((key) => {
-    if (content && key.name === "escape") close();
-  });
+  // While a dialog is open it owns the top layer: esc or Ctrl+C closes it, and
+  // its modal flag stops those keys (and any others) reaching the surfaces below.
+  useKeyboardLayer(
+    (key) => {
+      if (key.name === "escape" || (key.ctrl && key.name === "c")) {
+        close();
+        return true;
+      }
+      return false;
+    },
+    { priority: KeyboardLayerPriority.DIALOG, modal: true },
+    content !== null,
+  );
 
   const value = useMemo<DialogContextValue>(
     () => ({ open, close, isOpen: content !== null }),

@@ -1,5 +1,5 @@
 import { TextAttributes } from "@opentui/core";
-import { useKeyboard, useRenderer } from "@opentui/react";
+import { useRenderer } from "@opentui/react";
 import { chatLocationStateSchema } from "@lightcode/ai/messages";
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
@@ -8,6 +8,10 @@ import { useDialog } from "../components/dialog-context";
 import { SessionsDialog } from "../components/sessions-dialog";
 import { client } from "../lib/client";
 import { useChatInput } from "../lib/chat-input-context";
+import {
+  KeyboardLayerPriority,
+  useKeyboardLayer,
+} from "../lib/keyboard-layers";
 import { useModeContext } from "../lib/mode-context";
 import type { Command } from "../lib/commands";
 
@@ -21,12 +25,24 @@ export function RootLayout() {
   const [creatingSession, setCreatingSession] = useState(false);
   const isHome = location.pathname === "/";
 
-  useKeyboard((key) => {
-    if (key.name === "tab") {
-      if (key.shift) cycleModePrev();
-      else cycleMode();
-    }
-  });
+  // Lowest-priority layer: app-wide shortcuts that any modal surface can
+  // shadow. Ctrl+C here exits, but only after higher layers (a draft to clear,
+  // an open dialog to close) have declined the key.
+  useKeyboardLayer(
+    (key) => {
+      if (key.name === "tab") {
+        if (key.shift) cycleModePrev();
+        else cycleMode();
+        return true;
+      }
+      if (key.ctrl && key.name === "c") {
+        renderer.destroy();
+        return true;
+      }
+      return false;
+    },
+    { priority: KeyboardLayerPriority.GLOBAL },
+  );
 
   const handleSubmit = async (value: string) => {
     if (activeChatSubmit) {

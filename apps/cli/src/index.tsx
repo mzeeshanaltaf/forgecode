@@ -4,6 +4,7 @@ import { createRoot } from "@opentui/react";
 import { App } from "./app";
 
 const renderer = await createCliRenderer({
+  exitOnCtrlC: false,
   useKittyKeyboard: {
     disambiguate: true,
     alternateKeys: true,

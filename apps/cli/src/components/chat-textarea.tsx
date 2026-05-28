@@ -8,6 +8,10 @@ import {
 } from "@lightcode/ai/model";
 import { useModeContext } from "../lib/mode-context";
 import {
+  KeyboardLayerPriority,
+  useKeyboardLayer,
+} from "../lib/keyboard-layers";
+import {
   filterCommands,
   getCommandQuery,
   type Command,
@@ -100,6 +104,19 @@ export function ChatTextarea({ onSubmit, onCommand, placeholder }: ChatTextareaP
     resetInput();
     onCommand(command);
   };
+
+  // Ctrl+C clears a non-empty draft; an empty draft falls through to the
+  // global layer, which exits the app.
+  useKeyboardLayer(
+    (key) => {
+      if (key.ctrl && key.name === "c" && text.length > 0) {
+        resetInput();
+        return true;
+      }
+      return false;
+    },
+    { priority: KeyboardLayerPriority.CHAT_INPUT },
+  );
 
   const handleSubmit = () => {
     const textarea = textareaRef.current;
