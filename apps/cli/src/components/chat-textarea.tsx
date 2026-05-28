@@ -16,7 +16,13 @@ import {
   getCommandQuery,
   type Command,
 } from "../lib/commands";
+import {
+  filterFiles,
+  getFileMentionQuery,
+  loadProjectFiles,
+} from "../lib/file-mentions";
 import { CommandPopover } from "./command-popover";
+import { FileMentionPopover } from "./file-mention-popover";
 
 const MODE_COLORS: Record<string, string> = {
   build: "#5C9CF5",
@@ -53,25 +59,47 @@ export function ChatTextarea({ onSubmit, onCommand, placeholder }: ChatTextareaP
   const [scrollY, setScrollY] = useState(0);
   const [text, setText] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [files, setFiles] = useState<string[]>([]);
   const { mode } = useModeContext();
   const modeDef = modes[mode];
   const modeColor = MODE_COLORS[mode] ?? "#FFFFFF";
 
-  const query = getCommandQuery(text);
-  const matches = query !== null ? filterCommands(query) : [];
-  const popoverOpen = matches.length > 0;
-  const safeIndex = Math.min(selectedIndex, matches.length - 1);
+  // A leading "/" command takes precedence over an "@" file mention; the two
+  // contexts are otherwise mutually exclusive.
+  const commandQuery = getCommandQuery(text);
+  const commandMatches = commandQuery !== null ? filterCommands(commandQuery) : [];
+  const commandOpen = commandMatches.length > 0;
 
-  // Latest matches available to the keyboard handler without re-subscribing.
-  const matchesRef = useRef<Command[]>(matches);
-  matchesRef.current = matches;
+  const fileMention = commandQuery === null ? getFileMentionQuery(text) : null;
+  const fileMatches = fileMention ? filterFiles(fileMention.query, files) : [];
+  const fileOpen = !commandOpen && fileMatches.length > 0;
+
+  const activeMatches: (Command | string)[] = commandOpen ? commandMatches : fileMatches;
+  const popoverOpen = commandOpen || fileOpen;
+  const safeIndex = Math.min(selectedIndex, activeMatches.length - 1);
+  const activeQuery = commandOpen ? commandQuery : (fileMention?.query ?? null);
+
+  // Lazily scan the project for files the first time an "@" mention appears.
+  const filesRequested = useRef(false);
+  const mentionActive = fileMention !== null;
+  useEffect(() => {
+    if (!mentionActive || filesRequested.current) return;
+    filesRequested.current = true;
+    loadProjectFiles().then(setFiles).catch(() => {});
+  }, [mentionActive]);
+
+  // Latest values available to the keyboard/submit handlers without re-subscribing.
+  const matchesRef = useRef(activeMatches);
+  matchesRef.current = activeMatches;
+  const filesRef = useRef(files);
+  filesRef.current = files;
   const selectedIndexRef = useRef(selectedIndex);
   selectedIndexRef.current = selectedIndex;
 
   // Reset the highlight to the top whenever the filtered set changes.
   useEffect(() => {
     setSelectedIndex(0);
-  }, [query]);
+  }, [activeQuery]);
 
   useKeyboard((key) => {
     const count = matchesRef.current.length;
@@ -105,6 +133,21 @@ export function ChatTextarea({ onSubmit, onCommand, placeholder }: ChatTextareaP
     onCommand(command);
   };
 
+  // Replace the trailing "@<query>" with the chosen path plus a trailing space.
+  const insertFileMention = (path: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const current = textarea.plainText;
+    const mention = getFileMentionQuery(current);
+    if (!mention) return;
+    const before = current.slice(0, mention.start);
+    const after = current.slice(mention.start + 1 + mention.query.length);
+    const insertion = `${path} `;
+    textarea.setText(before + insertion + after);
+    textarea.cursorOffset = (before + insertion).length;
+    syncFromBuffer();
+  };
+
   // Ctrl+C clears a non-empty draft; an empty draft falls through to the
   // global layer, which exits the app.
   useKeyboardLayer(
@@ -122,14 +165,26 @@ export function ChatTextarea({ onSubmit, onCommand, placeholder }: ChatTextareaP
     const textarea = textareaRef.current;
     if (!textarea) return;
     const value = textarea.plainText;
-    const commandQuery = getCommandQuery(value);
-    const commandMatches =
-      commandQuery !== null ? filterCommands(commandQuery) : [];
-    const command =
-      commandMatches[Math.min(selectedIndexRef.current, commandMatches.length - 1)];
-    if (command) {
-      runCommand(command);
-      return;
+    const cmdQuery = getCommandQuery(value);
+    if (cmdQuery !== null) {
+      const cmdMatches = filterCommands(cmdQuery);
+      const command =
+        cmdMatches[Math.min(selectedIndexRef.current, cmdMatches.length - 1)];
+      if (command) {
+        runCommand(command);
+        return;
+      }
+    } else {
+      const mention = getFileMentionQuery(value);
+      if (mention) {
+        const matches = filterFiles(mention.query, filesRef.current);
+        const path =
+          matches[Math.min(selectedIndexRef.current, matches.length - 1)];
+        if (path) {
+          insertFileMention(path);
+          return;
+        }
+      }
     }
     resetInput();
     onSubmit(value);
@@ -153,13 +208,23 @@ export function ChatTextarea({ onSubmit, onCommand, placeholder }: ChatTextareaP
           width={PROMPT_WIDTH - 1}
           zIndex={100}
         >
-          <CommandPopover
-            commands={matches}
-            selectedIndex={safeIndex}
-            width={PROMPT_WIDTH - 1}
-            onHover={setSelectedIndex}
-            onSelect={runCommand}
-          />
+          {commandOpen ? (
+            <CommandPopover
+              commands={commandMatches}
+              selectedIndex={safeIndex}
+              width={PROMPT_WIDTH - 1}
+              onHover={setSelectedIndex}
+              onSelect={runCommand}
+            />
+          ) : (
+            <FileMentionPopover
+              files={fileMatches}
+              selectedIndex={safeIndex}
+              width={PROMPT_WIDTH - 1}
+              onHover={setSelectedIndex}
+              onSelect={insertFileMention}
+            />
+          )}
         </box>
       )}
       <box flexDirection="row">
