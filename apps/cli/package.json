@@ -15,10 +15,11 @@
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.184",
-    "@lightcode/shared": "workspace:*",
     "@lightcode/ai": "workspace:*",
+    "@lightcode/shared": "workspace:*",
     "@opentui/core": "^0.2.1",
     "@opentui/react": "^0.2.1",
+    "date-fns": "^4.3.0",
     "hono": "^4.6.0",
     "react": "^19.2.4",
     "react-router": "^7.0.0"

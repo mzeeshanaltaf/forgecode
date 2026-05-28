@@ -22,6 +22,19 @@ function roleOf(role: string): MessageRole {
 }
 
 export const sessionsRoute = new Hono()
+  .get("/", async (c) => {
+    const sessions = await prisma.session.findMany({
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, title: true, updatedAt: true },
+    });
+    return c.json({
+      sessions: sessions.map((session) => ({
+        id: session.id,
+        title: session.title,
+        updatedAt: session.updatedAt.toISOString(),
+      })),
+    });
+  })
   .post("/", async (c) => {
     const session = await prisma.session.create({ data: {} });
     return c.json({ id: session.id });

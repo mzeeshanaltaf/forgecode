@@ -3,6 +3,7 @@ import type { NavigateFunction } from "react-router";
 export interface CommandContext {
   navigate: NavigateFunction;
   exit: () => void;
+  openSessions: () => void;
 }
 
 export interface Command {
@@ -16,6 +17,11 @@ export const commands: Command[] = [
     name: "new",
     description: "Start a new chat",
     run: ({ navigate }) => navigate("/"),
+  },
+  {
+    name: "sessions",
+    description: "Browse sessions",
+    run: ({ openSessions }) => openSessions(),
   },
   {
     name: "exit",

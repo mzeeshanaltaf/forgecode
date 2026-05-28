@@ -39,3 +39,17 @@ export const sessionMessagesResponseSchema = z.object({
 });
 
 export type SessionMessagesResponse = z.infer<typeof sessionMessagesResponseSchema>;
+
+const sessionSummarySchema = z.object({
+  id: z.string(),
+  title: z.string().nullable(),
+  updatedAt: z.string(),
+});
+
+export type SessionSummary = z.infer<typeof sessionSummarySchema>;
+
+export const sessionListResponseSchema = z.object({
+  sessions: z.array(sessionSummarySchema),
+});
+
+export type SessionListResponse = z.infer<typeof sessionListResponseSchema>;

@@ -37,6 +37,8 @@ export function Chat() {
       return;
     }
     let cancelled = false;
+    setHistory(null);
+    setInitialModeMap(new Map());
     (async () => {
       const response = await client.sessions[":id"].messages.$get({ param: { id } });
       if (cancelled) return;
@@ -68,7 +70,14 @@ export function Chat() {
     );
   }
 
-  return <ChatSession sessionId={id} initialMessages={history} initialModeMap={initialModeMap} />;
+  return (
+    <ChatSession
+      key={id}
+      sessionId={id}
+      initialMessages={history}
+      initialModeMap={initialModeMap}
+    />
+  );
 }
 
 interface ChatSessionProps {

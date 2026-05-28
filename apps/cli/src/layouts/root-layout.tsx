@@ -4,6 +4,8 @@ import { chatLocationStateSchema } from "@lightcode/ai/messages";
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { ChatTextarea } from "../components/chat-textarea";
+import { useDialog } from "../components/dialog-context";
+import { SessionsDialog } from "../components/sessions-dialog";
 import { client } from "../lib/client";
 import { useChatInput } from "../lib/chat-input-context";
 import { useModeContext } from "../lib/mode-context";
@@ -15,6 +17,7 @@ export function RootLayout() {
   const renderer = useRenderer();
   const { submit: activeChatSubmit } = useChatInput();
   const { cycleMode, cycleModePrev } = useModeContext();
+  const { open: openDialog } = useDialog();
   const [creatingSession, setCreatingSession] = useState(false);
   const isHome = location.pathname === "/";
 
@@ -43,7 +46,14 @@ export function RootLayout() {
   };
 
   const handleCommand = (command: Command) => {
-    command.run({ navigate, exit: () => renderer.destroy() });
+    command.run({
+      navigate,
+      exit: () => renderer.destroy(),
+      openSessions: () =>
+        openDialog(
+          <SessionsDialog onSelectSession={(id) => navigate(`/sessions/${id}`)} />,
+        ),
+    });
   };
 
   return (
