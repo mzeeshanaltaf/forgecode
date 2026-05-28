@@ -1,11 +1,18 @@
 import { TextAttributes, type TextareaRenderable } from "@opentui/core";
-import { useRef, useState } from "react";
+import { useKeyboard } from "@opentui/react";
+import { useEffect, useRef, useState } from "react";
 import { modes } from "@lightcode/ai/modes";
 import {
   CODING_AGENT_MODEL_ID,
   CODING_AGENT_PROVIDER,
 } from "@lightcode/ai/model";
 import { useModeContext } from "../lib/mode-context";
+import {
+  filterCommands,
+  getCommandQuery,
+  type Command,
+} from "../lib/commands";
+import { CommandPopover } from "./command-popover";
 
 const MODE_COLORS: Record<string, string> = {
   build: "#5C9CF5",
@@ -32,33 +39,82 @@ const PROMPT_WIDTH = 64;
 
 interface ChatTextareaProps {
   onSubmit: (value: string) => void;
+  onCommand: (command: Command) => void;
   placeholder: string;
 }
 
-export function ChatTextarea({ onSubmit, placeholder }: ChatTextareaProps) {
+export function ChatTextarea({ onSubmit, onCommand, placeholder }: ChatTextareaProps) {
   const textareaRef = useRef<TextareaRenderable | null>(null);
   const [lineCount, setLineCount] = useState(1);
   const [scrollY, setScrollY] = useState(0);
+  const [text, setText] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const { mode } = useModeContext();
   const modeDef = modes[mode];
   const modeColor = MODE_COLORS[mode] ?? "#FFFFFF";
 
+  const query = getCommandQuery(text);
+  const matches = query !== null ? filterCommands(query) : [];
+  const popoverOpen = matches.length > 0;
+  const safeIndex = Math.min(selectedIndex, matches.length - 1);
+
+  // Latest matches available to the keyboard handler without re-subscribing.
+  const matchesRef = useRef<Command[]>(matches);
+  matchesRef.current = matches;
+  const selectedIndexRef = useRef(selectedIndex);
+  selectedIndexRef.current = selectedIndex;
+
+  // Reset the highlight to the top whenever the filtered set changes.
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [query]);
+
+  useKeyboard((key) => {
+    const count = matchesRef.current.length;
+    if (count === 0) return;
+    if (key.name === "up") {
+      setSelectedIndex((i) => Math.max(0, Math.min(i, count - 1) - 1));
+    } else if (key.name === "down") {
+      setSelectedIndex((i) => Math.min(count - 1, i + 1));
+    }
+  });
+
   const syncFromBuffer = () => {
     const textarea = textareaRef.current;
     if (!textarea) return;
+    setText(textarea.plainText);
     setLineCount(
       Math.max(1, textarea.lineCount, textarea.virtualLineCount),
     );
     setScrollY(textarea.scrollY);
   };
 
+  const resetInput = () => {
+    textareaRef.current?.clear();
+    setText("");
+    setLineCount(1);
+    setScrollY(0);
+  };
+
+  const runCommand = (command: Command) => {
+    resetInput();
+    onCommand(command);
+  };
+
   const handleSubmit = () => {
     const textarea = textareaRef.current;
     if (!textarea) return;
     const value = textarea.plainText;
-    textarea.clear();
-    setLineCount(1);
-    setScrollY(0);
+    const commandQuery = getCommandQuery(value);
+    const commandMatches =
+      commandQuery !== null ? filterCommands(commandQuery) : [];
+    const command =
+      commandMatches[Math.min(selectedIndexRef.current, commandMatches.length - 1)];
+    if (command) {
+      runCommand(command);
+      return;
+    }
+    resetInput();
     onSubmit(value);
   };
 
@@ -71,7 +127,24 @@ export function ChatTextarea({ onSubmit, placeholder }: ChatTextareaProps) {
   const showScrollbar = lineCount > visibleLines;
 
   return (
-    <box flexDirection="column" width={PROMPT_WIDTH}>
+    <box flexDirection="column" width={PROMPT_WIDTH} position="relative">
+      {popoverOpen && (
+        <box
+          position="absolute"
+          left={1}
+          bottom={boxHeight}
+          width={PROMPT_WIDTH - 1}
+          zIndex={100}
+        >
+          <CommandPopover
+            commands={matches}
+            selectedIndex={safeIndex}
+            width={PROMPT_WIDTH - 1}
+            onHover={setSelectedIndex}
+            onSelect={runCommand}
+          />
+        </box>
+      )}
       <box flexDirection="row">
         <box flexDirection="column" width={1}>
           {Array.from({ length: boxHeight }, (_, i) => (

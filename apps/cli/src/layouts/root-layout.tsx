@@ -1,5 +1,5 @@
 import { TextAttributes } from "@opentui/core";
-import { useKeyboard } from "@opentui/react";
+import { useKeyboard, useRenderer } from "@opentui/react";
 import { chatLocationStateSchema } from "@lightcode/ai/messages";
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
@@ -7,10 +7,12 @@ import { ChatTextarea } from "../components/chat-textarea";
 import { client } from "../lib/client";
 import { useChatInput } from "../lib/chat-input-context";
 import { useModeContext } from "../lib/mode-context";
+import type { Command } from "../lib/commands";
 
 export function RootLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const renderer = useRenderer();
   const { submit: activeChatSubmit } = useChatInput();
   const { cycleMode, cycleModePrev } = useModeContext();
   const [creatingSession, setCreatingSession] = useState(false);
@@ -38,6 +40,10 @@ export function RootLayout() {
     } finally {
       setCreatingSession(false);
     }
+  };
+
+  const handleCommand = (command: Command) => {
+    command.run({ navigate, exit: () => renderer.destroy() });
   };
 
   return (
@@ -70,7 +76,11 @@ export function RootLayout() {
         >
           <Outlet />
           <box marginTop={1}>
-            <ChatTextarea onSubmit={handleSubmit} placeholder="Ask anything..." />
+            <ChatTextarea
+              onSubmit={handleSubmit}
+              onCommand={handleCommand}
+              placeholder="Ask anything..."
+            />
           </box>
         </box>
       ) : (
@@ -85,7 +95,11 @@ export function RootLayout() {
             paddingBottom={1}
             flexShrink={0}
           >
-            <ChatTextarea onSubmit={handleSubmit} placeholder="Send a message..." />
+            <ChatTextarea
+              onSubmit={handleSubmit}
+              onCommand={handleCommand}
+              placeholder="Send a message..."
+            />
           </box>
         </>
       )}
