@@ -15,8 +15,9 @@ import {
 import { z } from "zod";
 import { tools as agentTools } from "./tools";
 import { DEFAULT_MODE, modes, modeSchema, type ModeName } from "./modes";
+import { CODING_AGENT_MODEL_ID as MODEL_ID } from "./model";
 
-const MODEL_ID = "gpt-5-mini";
+export { CODING_AGENT_MODEL_ID } from "./model";
 
 const SERVICE_TIER = z
   .enum(["default", "auto", "flex", "priority"])
@@ -98,7 +99,6 @@ export const codingAgent = new ToolLoopAgent({
 
 export type CodingAgentUIMessage = InferAgentUIMessage<typeof codingAgent>;
 
-export const CODING_AGENT_MODEL_ID = MODEL_ID;
 
 export interface RunCodingTurnParams {
   history: UIMessage[];

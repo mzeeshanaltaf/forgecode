@@ -25,8 +25,17 @@ export const postMessageRequestSchema = z.object({
 
 export type PostMessageRequest = z.infer<typeof postMessageRequestSchema>;
 
+const sessionMessageItemSchema = z.looseObject({
+  id: z.string(),
+  role: z.enum(["system", "user", "assistant"]),
+  mode: modeSchema,
+  parts: z.array(uiMessagePartSchema),
+});
+
+export type SessionMessageItem = z.infer<typeof sessionMessageItemSchema>;
+
 export const sessionMessagesResponseSchema = z.object({
-  messages: z.array(uiMessageSchema),
+  messages: z.array(sessionMessageItemSchema),
 });
 
 export type SessionMessagesResponse = z.infer<typeof sessionMessagesResponseSchema>;

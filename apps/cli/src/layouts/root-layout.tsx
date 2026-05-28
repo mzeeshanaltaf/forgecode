@@ -14,6 +14,7 @@ export function RootLayout() {
   const { submit: activeChatSubmit } = useChatInput();
   const { cycleMode, cycleModePrev } = useModeContext();
   const [creatingSession, setCreatingSession] = useState(false);
+  const isHome = location.pathname === "/";
 
   useKeyboard((key) => {
     if (key.name === "tab") {
@@ -40,7 +41,7 @@ export function RootLayout() {
   };
 
   return (
-    <box flexDirection="column" flexGrow={1}>
+    <box flexDirection="column" flexGrow={1} backgroundColor="#0A0A0A">
       <box
         flexDirection="row"
         justifyContent="space-between"
@@ -56,19 +57,38 @@ export function RootLayout() {
         </text>
       </box>
 
-      <box flexGrow={1} flexShrink={1} flexBasis={0} minHeight={0} padding={1}>
-        <Outlet />
-      </box>
-
-      <box
-        flexDirection="row"
-        justifyContent="center"
-        paddingTop={1}
-        paddingBottom={1}
-        flexShrink={0}
-      >
-        <ChatTextarea onSubmit={handleSubmit} />
-      </box>
+      {isHome ? (
+        <box
+          flexGrow={1}
+          flexShrink={1}
+          flexBasis={0}
+          minHeight={0}
+          flexDirection="column"
+          justifyContent="center"
+          alignItems="center"
+          padding={1}
+        >
+          <Outlet />
+          <box marginTop={1}>
+            <ChatTextarea onSubmit={handleSubmit} placeholder="Ask anything..." />
+          </box>
+        </box>
+      ) : (
+        <>
+          <box flexGrow={1} flexShrink={1} flexBasis={0} minHeight={0} padding={1}>
+            <Outlet />
+          </box>
+          <box
+            flexDirection="row"
+            justifyContent="center"
+            paddingTop={1}
+            paddingBottom={1}
+            flexShrink={0}
+          >
+            <ChatTextarea onSubmit={handleSubmit} placeholder="Send a message..." />
+          </box>
+        </>
+      )}
     </box>
   );
 }

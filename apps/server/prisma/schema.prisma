@@ -24,6 +24,7 @@ model Message {
   clientId  String
   role      MessageRole
   model     String?
+  mode      String
   parts     Json
   createdAt DateTime    @default(now())
 

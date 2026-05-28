@@ -39,6 +39,7 @@ export const sessionsRoute = new Hono()
     const messages = rows.map((row) => ({
       id: row.clientId,
       role: row.role,
+      mode: row.mode,
       parts: row.parts,
     }));
     return c.json({ messages });
@@ -64,12 +65,14 @@ export const sessionsRoute = new Hono()
       where: { sessionId_clientId: { sessionId: id, clientId: incoming.id } },
       update: {
         role: roleOf(incoming.role),
+        mode,
         parts: incoming.parts as unknown as Prisma.InputJsonValue,
       },
       create: {
         sessionId: id,
         clientId: incoming.id,
         role: roleOf(incoming.role),
+        mode,
         parts: incoming.parts as unknown as Prisma.InputJsonValue,
       },
     });
@@ -128,6 +131,7 @@ export const sessionsRoute = new Hono()
             clientId: responseMessage.id,
             role: roleOf(responseMessage.role),
             model: CODING_AGENT_MODEL_ID,
+            mode,
             parts: responseMessage.parts as unknown as Prisma.InputJsonValue,
           },
         });

@@ -1,11 +1,15 @@
 import { TextAttributes, type TextareaRenderable } from "@opentui/core";
 import { useRef, useState } from "react";
 import { modes } from "@lightcode/ai/modes";
+import {
+  CODING_AGENT_MODEL_ID,
+  CODING_AGENT_PROVIDER,
+} from "@lightcode/ai/model";
 import { useModeContext } from "../lib/mode-context";
 
 const MODE_COLORS: Record<string, string> = {
-  build: "#22C55E",
-  plan: "#3B82F6",
+  build: "#5C9CF5",
+  plan: "#F5A742",
 };
 
 const KEY_BINDINGS: {
@@ -19,20 +23,25 @@ const KEY_BINDINGS: {
   { name: "return", ctrl: true, action: "newline" },
 ];
 
+const MIN_VISIBLE_LINES = 3;
 const MAX_VISIBLE_LINES = 7;
-const BOX_BORDER_ROWS = 2;
+const BOX_BORDER_ROWS = 0;
+const TOP_PADDING_ROW = 1;
+const FOOTER_ROWS = 2;
 const PROMPT_WIDTH = 64;
 
 interface ChatTextareaProps {
   onSubmit: (value: string) => void;
+  placeholder: string;
 }
 
-export function ChatTextarea({ onSubmit }: ChatTextareaProps) {
+export function ChatTextarea({ onSubmit, placeholder }: ChatTextareaProps) {
   const textareaRef = useRef<TextareaRenderable | null>(null);
   const [lineCount, setLineCount] = useState(1);
   const [scrollY, setScrollY] = useState(0);
   const { mode } = useModeContext();
   const modeDef = modes[mode];
+  const modeColor = MODE_COLORS[mode] ?? "#FFFFFF";
 
   const syncFromBuffer = () => {
     const textarea = textareaRef.current;
@@ -53,50 +62,66 @@ export function ChatTextarea({ onSubmit }: ChatTextareaProps) {
     onSubmit(value);
   };
 
-  const visibleLines = Math.min(lineCount, MAX_VISIBLE_LINES);
-  const boxHeight = visibleLines + BOX_BORDER_ROWS;
+  const visibleLines = Math.min(
+    Math.max(lineCount, MIN_VISIBLE_LINES),
+    MAX_VISIBLE_LINES,
+  );
+  const boxHeight =
+    visibleLines + BOX_BORDER_ROWS + TOP_PADDING_ROW + FOOTER_ROWS;
   const showScrollbar = lineCount > visibleLines;
 
   return (
     <box flexDirection="column" width={PROMPT_WIDTH}>
-      <box
-        border
-        borderStyle="rounded"
-        paddingLeft={1}
-        paddingRight={1}
-        height={boxHeight}
-      >
-        <box flexDirection="row" flexGrow={1}>
-          <textarea
-            ref={textareaRef}
-            focused
-            wrapMode="word"
-            placeholder="Press Enter to open chat..."
-            flexGrow={1}
-            height={visibleLines}
-            onSubmit={handleSubmit}
-            onContentChange={syncFromBuffer}
-            onCursorChange={syncFromBuffer}
-            keyBindings={KEY_BINDINGS}
-          />
-          {showScrollbar && (
-            <ScrollIndicator
-              visibleLines={visibleLines}
-              totalLines={lineCount}
-              scrollY={scrollY}
+      <box flexDirection="row">
+        <box flexDirection="column" width={1}>
+          {Array.from({ length: boxHeight }, (_, i) => (
+            <text key={i} fg={modeColor}>│</text>
+          ))}
+        </box>
+        <box
+          flexDirection="column"
+          backgroundColor="#1E1E1E"
+          paddingTop={1}
+          paddingLeft={1}
+          paddingRight={1}
+          marginLeft={0}
+          height={boxHeight}
+          flexGrow={1}
+        >
+          <box flexDirection="row" flexGrow={1}>
+            <textarea
+              ref={textareaRef}
+              focused
+              wrapMode="word"
+              placeholder={placeholder}
+              flexGrow={1}
+              height={visibleLines}
+              backgroundColor="#1E1E1E"
+              focusedBackgroundColor="#1E1E1E"
+              onSubmit={handleSubmit}
+              onContentChange={syncFromBuffer}
+              onCursorChange={syncFromBuffer}
+              keyBindings={KEY_BINDINGS}
             />
-          )}
+            {showScrollbar && (
+              <ScrollIndicator
+                visibleLines={visibleLines}
+                totalLines={lineCount}
+                scrollY={scrollY}
+              />
+            )}
+          </box>
+          <box flexDirection="row" flexShrink={0}>
+            <text fg={modeColor} attributes={TextAttributes.BOLD}>
+              ● {modeDef.label}
+            </text>
+            <text fg="#808080"> · </text>
+            <text fg="#FFFFFF">{CODING_AGENT_MODEL_ID}</text>
+            <text fg="#808080"> {CODING_AGENT_PROVIDER}</text>
+          </box>
+          <text> </text>
         </box>
       </box>
-      <box flexDirection="row">
-        <text fg={MODE_COLORS[mode] ?? "#FFFFFF"} attributes={TextAttributes.BOLD}>
-          ● {modeDef.label}
-        </text>
-        <text attributes={TextAttributes.DIM}> · Tab to switch</text>
-      </box>
-      <text attributes={TextAttributes.DIM}>
-        ↵ submit · Ctrl+↵ newline · Ctrl+C exit
-      </text>
     </box>
   );
 }

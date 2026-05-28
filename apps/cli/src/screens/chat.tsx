@@ -11,9 +11,8 @@ import {
 import { useChat } from "@ai-sdk/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
-import { TextAttributes } from "@opentui/core";
 import { ChatError } from "../components/chat-error";
-import { ChatMessage } from "../components/chat-message";
+import { ChatMessage, LeftBorderBlock } from "../components/chat-message";
 import { client } from "../lib/client";
 import { useRegisterChatInput } from "../lib/chat-input-context";
 import { useModeContext } from "../lib/mode-context";
@@ -30,6 +29,7 @@ export function Chat() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [history, setHistory] = useState<CodingAgentUIMessage[] | null>(null);
+  const [initialModeMap, setInitialModeMap] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
     if (!id) {
@@ -50,6 +50,7 @@ export function Chat() {
         navigate("/", { replace: true });
         return;
       }
+      setInitialModeMap(new Map(parsed.data.messages.map((m) => [m.id, m.mode])));
       setHistory(parsed.data.messages as CodingAgentUIMessage[]);
     })().catch(() => {
       if (!cancelled) navigate("/", { replace: true });
@@ -67,15 +68,16 @@ export function Chat() {
     );
   }
 
-  return <ChatSession sessionId={id} initialMessages={history} />;
+  return <ChatSession sessionId={id} initialMessages={history} initialModeMap={initialModeMap} />;
 }
 
 interface ChatSessionProps {
   sessionId: string;
   initialMessages: CodingAgentUIMessage[];
+  initialModeMap: Map<string, string>;
 }
 
-function ChatSession({ sessionId, initialMessages }: ChatSessionProps) {
+function ChatSession({ sessionId, initialMessages, initialModeMap }: ChatSessionProps) {
   const location = useLocation();
   const parsed = chatLocationStateSchema.safeParse(location.state);
   const initialInput = parsed.success ? parsed.data.input : "";
@@ -101,8 +103,26 @@ function ChatSession({ sessionId, initialMessages }: ChatSessionProps) {
       executeClientTool<CodingAgentUIMessage>({ toolCall, cwd, addToolOutput }),
   });
 
+  const messageModeMap = useRef<Map<string, string>>(new Map(initialModeMap));
+  const pendingModeRef = useRef<string>(getMode());
+  const [, forceUpdate] = useState(0);
+
+  useEffect(() => {
+    let updated = false;
+    for (const msg of messages) {
+      if (msg.role === "user" && !messageModeMap.current.has(msg.id)) {
+        messageModeMap.current.set(msg.id, pendingModeRef.current);
+        updated = true;
+      }
+    }
+    if (updated) {
+      forceUpdate((n) => n + 1);
+    }
+  }, [messages]);
+
   useRegisterChatInput((value) => {
     if (!value.trim()) return;
+    pendingModeRef.current = getMode();
     void sendMessage({ text: value });
   });
 
@@ -110,6 +130,7 @@ function ChatSession({ sessionId, initialMessages }: ChatSessionProps) {
   useEffect(() => {
     if (sentInitialRef.current || !initialInput) return;
     sentInitialRef.current = true;
+    pendingModeRef.current = getMode();
     void sendMessage({ text: initialInput });
   }, [initialInput, sendMessage]);
 
@@ -124,15 +145,16 @@ function ChatSession({ sessionId, initialMessages }: ChatSessionProps) {
   return (
     <scrollbox flexGrow={1} paddingTop={1} stickyScroll stickyStart="bottom">
       {visibleMessages.map((message) => (
-        <ChatMessage key={message.id} message={message} />
+        <ChatMessage
+          key={message.id}
+          message={message}
+          mode={messageModeMap.current.get(message.id) ?? null}
+        />
       ))}
       {showThinking && (
-        <box flexDirection="column" marginBottom={1}>
-          <text fg="#3B82F6" attributes={TextAttributes.BOLD}>
-            Assistant
-          </text>
+        <LeftBorderBlock borderColor="#666666">
           <text fg="#888888">Thinking...</text>
-        </box>
+        </LeftBorderBlock>
       )}
       {error && <ChatError error={error} />}
     </scrollbox>

@@ -1,8 +1,46 @@
 import { TextAttributes } from "@opentui/core";
+import type { ReactNode } from "react";
 import type { CodingAgentUIMessage } from "@lightcode/ai";
+
+const MODE_COLORS: Record<string, string> = {
+  build: "#5C9CF5",
+  plan: "#F5A742",
+};
+
+const GRAY_BORDER = "#666666";
+
+interface LeftBorderBlockProps {
+  borderColor: string;
+  backgroundColor?: string;
+  children: ReactNode;
+}
+
+export function LeftBorderBlock({
+  borderColor,
+  backgroundColor,
+  children,
+}: LeftBorderBlockProps) {
+  const padY = backgroundColor === undefined ? 0 : 1;
+  return (
+    <box flexDirection="row" marginBottom={1}>
+      <box border={["left"]} borderStyle="single" borderColor={borderColor} />
+      <box
+        flexDirection="column"
+        flexGrow={1}
+        backgroundColor={backgroundColor}
+        paddingLeft={1}
+        paddingTop={padY}
+        paddingBottom={padY}
+      >
+        {children}
+      </box>
+    </box>
+  );
+}
 
 interface ChatMessageProps {
   message: CodingAgentUIMessage;
+  mode?: string | null;
 }
 
 type MessagePart = CodingAgentUIMessage["parts"][number];
@@ -28,50 +66,65 @@ function describeToolInput(part: ToolPart): string | null {
   return null;
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, mode }: ChatMessageProps) {
+  const borderColor = (mode && MODE_COLORS[mode]) ?? "#3B82F6";
+  const isUser = message.role === "user";
+  const parts = message.parts.map((part, i) => {
+    if (part.type === "text") {
+      return (
+        <text key={i} marginLeft={isUser ? 0 : 2}>
+          {part.text}
+        </text>
+      );
+    }
+    if (part.type === "reasoning") {
+      if (part.text.trim().length === 0) return null;
+      return (
+        <LeftBorderBlock key={i} borderColor={GRAY_BORDER}>
+          <text attributes={TextAttributes.DIM}>{part.text}</text>
+        </LeftBorderBlock>
+      );
+    }
+    if (isToolPart(part)) {
+      const name =
+        part.type === "dynamic-tool" ? part.toolName : part.type.slice(5);
+      const subject = describeToolInput(part);
+      const label = subject ? `${name} ${subject}` : name;
+      let content: ReactNode;
+      if (part.state === "output-error") {
+        content = (
+          <text fg="red">
+            [tool: {label}] failed: {part.errorText}
+          </text>
+        );
+      } else if (part.state === "output-available") {
+        content = <text fg="#888888">[tool: {label}] done</text>;
+      } else {
+        content = <text fg="#888888">[tool: {label}] running</text>;
+      }
+      return (
+        <LeftBorderBlock key={i} borderColor={GRAY_BORDER}>
+          {content}
+        </LeftBorderBlock>
+      );
+    }
+    return null;
+  });
+
+  if (message.role === "user") {
+    return (
+      <LeftBorderBlock borderColor={borderColor} backgroundColor="#1E1E1E">
+        <text fg={borderColor} attributes={TextAttributes.BOLD}>
+          You
+        </text>
+        {parts}
+      </LeftBorderBlock>
+    );
+  }
+
   return (
     <box flexDirection="column" marginBottom={1}>
-      <text fg="#3B82F6" attributes={TextAttributes.BOLD}>
-        {message.role === "user" ? "You" : "Assistant"}
-      </text>
-      {message.parts.map((part, i) => {
-        if (part.type === "text") {
-          return <text key={i}>{part.text}</text>;
-        }
-        if (part.type === "reasoning") {
-          return (
-            <text key={i} attributes={TextAttributes.DIM}>
-              {part.text}
-            </text>
-          );
-        }
-        if (isToolPart(part)) {
-          const name =
-            part.type === "dynamic-tool" ? part.toolName : part.type.slice(5);
-          const subject = describeToolInput(part);
-          const label = subject ? `${name} ${subject}` : name;
-          if (part.state === "output-error") {
-            return (
-              <text key={i} fg="red">
-                [tool: {label}] failed: {part.errorText}
-              </text>
-            );
-          }
-          if (part.state === "output-available") {
-            return (
-              <text key={i} fg="#888888">
-                [tool: {label}] done
-              </text>
-            );
-          }
-          return (
-            <text key={i} fg="#888888">
-              [tool: {label}] running
-            </text>
-          );
-        }
-        return null;
-      })}
+      {parts}
     </box>
   );
 }
