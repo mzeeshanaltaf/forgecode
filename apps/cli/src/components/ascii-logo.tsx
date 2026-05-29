@@ -1,9 +1,12 @@
+import { useTheme } from "../lib/theme";
+
 export function AsciiLogo() {
+  const theme = useTheme();
   return (
     <box flexDirection="row" justifyContent="center" alignItems="flex-end">
-      <ascii-font font="tiny" text="light" color="#808080" />
+      <ascii-font font="tiny" text="light" color={theme.textSubtle} />
       <text> </text>
-      <ascii-font font="tiny" text="code" color="#FFFFFF" />
+      <ascii-font font="tiny" text="code" color={theme.text} />
     </box>
   );
 }

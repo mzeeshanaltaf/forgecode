@@ -1,13 +1,8 @@
 import { TextAttributes } from "@opentui/core";
 import type { ReactNode } from "react";
 import type { CodingAgentUIMessage } from "@lightcode/ai";
-
-const MODE_COLORS: Record<string, string> = {
-  build: "#5C9CF5",
-  plan: "#F5A742",
-};
-
-const GRAY_BORDER = "#666666";
+import type { ModeName } from "@lightcode/ai/modes";
+import { useTheme } from "../lib/theme";
 
 interface LeftBorderBlockProps {
   borderColor: string;
@@ -67,12 +62,13 @@ function describeToolInput(part: ToolPart): string | null {
 }
 
 export function ChatMessage({ message, mode }: ChatMessageProps) {
-  const borderColor = (mode && MODE_COLORS[mode]) ?? "#3B82F6";
+  const theme = useTheme();
+  const borderColor = (mode && theme.mode[mode as ModeName]) ?? theme.accent;
   const isUser = message.role === "user";
   const parts = message.parts.map((part, i) => {
     if (part.type === "text") {
       return (
-        <text key={i} marginLeft={isUser ? 0 : 2}>
+        <text key={i} fg={theme.text} marginLeft={isUser ? 0 : 2}>
           {part.text}
         </text>
       );
@@ -80,8 +76,8 @@ export function ChatMessage({ message, mode }: ChatMessageProps) {
     if (part.type === "reasoning") {
       if (part.text.trim().length === 0) return null;
       return (
-        <LeftBorderBlock key={i} borderColor={GRAY_BORDER}>
-          <text attributes={TextAttributes.DIM}>{part.text}</text>
+        <LeftBorderBlock key={i} borderColor={theme.border}>
+          <text fg={theme.text} attributes={TextAttributes.DIM}>{part.text}</text>
         </LeftBorderBlock>
       );
     }
@@ -93,17 +89,17 @@ export function ChatMessage({ message, mode }: ChatMessageProps) {
       let content: ReactNode;
       if (part.state === "output-error") {
         content = (
-          <text fg="red">
+          <text fg={theme.error}>
             [tool: {label}] failed: {part.errorText}
           </text>
         );
       } else if (part.state === "output-available") {
-        content = <text fg="#888888">[tool: {label}] done</text>;
+        content = <text fg={theme.textMuted}>[tool: {label}] done</text>;
       } else {
-        content = <text fg="#888888">[tool: {label}] running</text>;
+        content = <text fg={theme.textMuted}>[tool: {label}] running</text>;
       }
       return (
-        <LeftBorderBlock key={i} borderColor={GRAY_BORDER}>
+        <LeftBorderBlock key={i} borderColor={theme.border}>
           {content}
         </LeftBorderBlock>
       );
@@ -113,7 +109,7 @@ export function ChatMessage({ message, mode }: ChatMessageProps) {
 
   if (message.role === "user") {
     return (
-      <LeftBorderBlock borderColor={borderColor} backgroundColor="#1E1E1E">
+      <LeftBorderBlock borderColor={borderColor} backgroundColor={theme.surface}>
         <text fg={borderColor} attributes={TextAttributes.BOLD}>
           You
         </text>

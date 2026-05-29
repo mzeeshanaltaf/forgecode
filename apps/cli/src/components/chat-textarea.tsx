@@ -7,6 +7,7 @@ import {
   CODING_AGENT_PROVIDER,
 } from "@lightcode/ai/model";
 import { useModeContext } from "../lib/mode-context";
+import { useTheme } from "../lib/theme";
 import {
   KeyboardLayerPriority,
   useKeyboardLayer,
@@ -23,11 +24,6 @@ import {
 } from "../lib/file-mentions";
 import { CommandPopover } from "./command-popover";
 import { FileMentionPopover } from "./file-mention-popover";
-
-const MODE_COLORS: Record<string, string> = {
-  build: "#5C9CF5",
-  plan: "#F5A742",
-};
 
 const KEY_BINDINGS: {
   name: string;
@@ -61,8 +57,9 @@ export function ChatTextarea({ onSubmit, onCommand, placeholder }: ChatTextareaP
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [files, setFiles] = useState<string[]>([]);
   const { mode } = useModeContext();
+  const theme = useTheme();
   const modeDef = modes[mode];
-  const modeColor = MODE_COLORS[mode] ?? "#FFFFFF";
+  const modeColor = theme.mode[mode] ?? theme.text;
 
   // A leading "/" command takes precedence over an "@" file mention; the two
   // contexts are otherwise mutually exclusive.
@@ -235,7 +232,7 @@ export function ChatTextarea({ onSubmit, onCommand, placeholder }: ChatTextareaP
         </box>
         <box
           flexDirection="column"
-          backgroundColor="#1E1E1E"
+          backgroundColor={theme.surface}
           paddingTop={1}
           paddingLeft={1}
           paddingRight={1}
@@ -251,8 +248,12 @@ export function ChatTextarea({ onSubmit, onCommand, placeholder }: ChatTextareaP
               placeholder={placeholder}
               flexGrow={1}
               height={visibleLines}
-              backgroundColor="#1E1E1E"
-              focusedBackgroundColor="#1E1E1E"
+              backgroundColor={theme.surface}
+              focusedBackgroundColor={theme.surface}
+              textColor={theme.text}
+              focusedTextColor={theme.text}
+              cursorColor={theme.text}
+              placeholderColor={theme.textFaint}
               onSubmit={handleSubmit}
               onContentChange={syncFromBuffer}
               onCursorChange={syncFromBuffer}
@@ -270,9 +271,9 @@ export function ChatTextarea({ onSubmit, onCommand, placeholder }: ChatTextareaP
             <text fg={modeColor} attributes={TextAttributes.BOLD}>
               ● {modeDef.label}
             </text>
-            <text fg="#808080"> · </text>
-            <text fg="#FFFFFF">{CODING_AGENT_MODEL_ID}</text>
-            <text fg="#808080"> {CODING_AGENT_PROVIDER}</text>
+            <text fg={theme.textSubtle}> · </text>
+            <text fg={theme.text}>{CODING_AGENT_MODEL_ID}</text>
+            <text fg={theme.textSubtle}> {CODING_AGENT_PROVIDER}</text>
           </box>
           <text> </text>
         </box>
@@ -292,6 +293,7 @@ function ScrollIndicator({
   totalLines,
   scrollY,
 }: ScrollIndicatorProps) {
+  const theme = useTheme();
   const thumbSize = Math.max(
     1,
     Math.round((visibleLines / totalLines) * visibleLines),
@@ -308,7 +310,7 @@ function ScrollIndicator({
       {Array.from({ length: visibleLines }, (_, i) => {
         const isThumb = i >= thumbStart && i < thumbStart + thumbSize;
         return (
-          <text key={i} fg={isThumb ? "#888888" : "#333333"}>
+          <text key={i} fg={isThumb ? theme.scrollbarThumb : theme.scrollbarTrack}>
             {isThumb ? "█" : "│"}
           </text>
         );

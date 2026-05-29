@@ -3,13 +3,9 @@ import { useKeyboard } from "@opentui/react";
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "./dialog";
 import { DialogOverlay } from "./dialog-overlay";
+import { useTheme } from "../lib/theme";
 
 const MAX_VISIBLE = 8;
-const HIGHLIGHT_BG = "#EFA56A";
-const SURFACE_BG = "#141414";
-const SELECTED_FG = "#1A1A1A";
-const LABEL_FG = "#D4D4D4";
-const HINT_FG = "#6B6B6B";
 
 export interface SelectDialogOption {
   value: string;
@@ -22,6 +18,10 @@ interface SelectDialogProps {
   options: SelectDialogOption[];
   onSelect: (option: SelectDialogOption) => void;
   onClose: () => void;
+  /** Fires when the highlighted option changes (keyboard nav or mouse hover). */
+  onHighlight?: (option: SelectDialogOption) => void;
+  /** Value to highlight initially; defaults to the first option. */
+  initialSelectedValue?: string;
   placeholder?: string;
   width?: number;
   emptyText?: string;
@@ -44,13 +44,26 @@ export function SelectDialog({
   options,
   onSelect,
   onClose,
+  onHighlight,
+  initialSelectedValue,
   placeholder = "Search",
   width = 60,
   emptyText = "No matches",
 }: SelectDialogProps) {
+  const theme = useTheme();
   const [query, setQuery] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(() => {
+    if (!initialSelectedValue) return 0;
+    const i = options.findIndex((o) => o.value === initialSelectedValue);
+    return i >= 0 ? i : 0;
+  });
   const scrollRef = useRef<ScrollBoxRenderable | null>(null);
+
+  // Call the latest onHighlight without re-firing the effect on its identity,
+  // and only when the highlighted value actually changes.
+  const onHighlightRef = useRef(onHighlight);
+  onHighlightRef.current = onHighlight;
+  const lastHighlightedRef = useRef<string | null>(null);
 
   const filtered = query === "" ? options : options.filter((o) => matches(o, query));
   const safeIndex = Math.min(selectedIndex, Math.max(0, filtered.length - 1));
@@ -71,6 +84,10 @@ export function SelectDialog({
     const selected = filtered[safeIndex];
     if (!selected) return;
     scrollRef.current?.scrollChildIntoView(rowId(selected.value));
+    if (lastHighlightedRef.current !== selected.value) {
+      lastHighlightedRef.current = selected.value;
+      onHighlightRef.current?.(selected);
+    }
   }, [safeIndex, filtered]);
 
   useKeyboard((key) => {
@@ -95,51 +112,51 @@ export function SelectDialog({
           focused
           width={innerWidth}
           placeholder={placeholder}
-          backgroundColor={SURFACE_BG}
-          focusedBackgroundColor={SURFACE_BG}
-          textColor={LABEL_FG}
+          backgroundColor={theme.panel}
+          focusedBackgroundColor={theme.panel}
+          textColor={theme.textSecondary}
           onInput={setQuery}
           onSubmit={commitSelection}
         />
         <box marginTop={1} flexDirection="column">
           {filtered.length === 0 ? (
-            <text fg={HINT_FG}>{emptyText}</text>
+            <text fg={theme.textFaint}>{emptyText}</text>
           ) : (
             <scrollbox
               ref={scrollRef}
               width={innerWidth}
               height={visibleRows}
               style={{
-                rootOptions: { backgroundColor: SURFACE_BG },
-                wrapperOptions: { backgroundColor: SURFACE_BG },
-                viewportOptions: { backgroundColor: SURFACE_BG },
-                contentOptions: { backgroundColor: SURFACE_BG },
+                rootOptions: { backgroundColor: theme.panel },
+                wrapperOptions: { backgroundColor: theme.panel },
+                viewportOptions: { backgroundColor: theme.panel },
+                contentOptions: { backgroundColor: theme.panel },
                 scrollbarOptions: {
                   showArrows: false,
                   trackOptions: {
-                    foregroundColor: "#3A3A3A",
-                    backgroundColor: SURFACE_BG,
+                    foregroundColor: theme.scrollbarTrackMuted,
+                    backgroundColor: theme.panel,
                   },
                 },
               }}
             >
               {filtered.map((option, i) => {
                 const selected = i === safeIndex;
-                const fg = selected ? SELECTED_FG : undefined;
+                const fg = selected ? theme.highlightText : undefined;
                 return (
                   <box
                     key={option.value}
                     id={rowId(option.value)}
                     flexDirection="row"
                     width="100%"
-                    backgroundColor={selected ? HIGHLIGHT_BG : SURFACE_BG}
+                    backgroundColor={selected ? theme.highlight : theme.panel}
                     paddingLeft={1}
                     onMouseMove={() => setSelectedIndex(i)}
                     onMouseDown={() => onSelect(option)}
                   >
-                    <text fg={fg ?? LABEL_FG}>{option.label}</text>
+                    <text fg={fg ?? theme.textSecondary}>{option.label}</text>
                     {option.hint ? (
-                      <text fg={fg ?? HINT_FG}> {option.hint}</text>
+                      <text fg={fg ?? theme.textFaint}> {option.hint}</text>
                     ) : null}
                   </box>
                 );

@@ -4,6 +4,7 @@ export interface CommandContext {
   navigate: NavigateFunction;
   exit: () => void;
   openSessions: () => void;
+  openThemes: () => void;
 }
 
 export interface Command {
@@ -22,6 +23,11 @@ export const commands: Command[] = [
     name: "sessions",
     description: "Browse sessions",
     run: ({ openSessions }) => openSessions(),
+  },
+  {
+    name: "theme",
+    description: "Switch theme",
+    run: ({ openThemes }) => openThemes(),
   },
   {
     name: "exit",

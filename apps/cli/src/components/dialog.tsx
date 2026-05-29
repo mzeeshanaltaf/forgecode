@@ -1,9 +1,6 @@
 import { TextAttributes } from "@opentui/core";
 import type { ReactNode } from "react";
-
-const PANEL_BG = "#141414";
-const TITLE_FG = "#D4D4D4";
-const HINT_FG = "#6B6B6B";
+import { useTheme } from "../lib/theme";
 
 interface DialogProps {
   title: string;
@@ -13,10 +10,11 @@ interface DialogProps {
 }
 
 export function Dialog({ title, children, width = 60, onClose }: DialogProps) {
+  const theme = useTheme();
   return (
     <box
       width={width}
-      backgroundColor={PANEL_BG}
+      backgroundColor={theme.panel}
       paddingTop={1}
       paddingBottom={1}
       paddingLeft={2}
@@ -25,15 +23,15 @@ export function Dialog({ title, children, width = 60, onClose }: DialogProps) {
       onMouseDown={(event) => event.stopPropagation()}
     >
       <box flexDirection="row" justifyContent="space-between" flexShrink={0}>
-        <text fg={TITLE_FG} attributes={TextAttributes.BOLD}>
+        <text fg={theme.textSecondary} attributes={TextAttributes.BOLD}>
           {title}
         </text>
         <box onMouseDown={() => onClose?.()}>
-          <text fg={HINT_FG}>esc</text>
+          <text fg={theme.textFaint}>esc</text>
         </box>
       </box>
       <box marginTop={1} flexDirection="column">
-        {children ?? <text fg={HINT_FG}>Todo</text>}
+        {children ?? <text fg={theme.textFaint}>Todo</text>}
       </box>
     </box>
   );

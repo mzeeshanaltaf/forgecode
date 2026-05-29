@@ -1,14 +1,10 @@
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useEffect, useRef } from "react";
 import type { Command } from "../lib/commands";
+import { useTheme } from "../lib/theme";
 
 const MAX_VISIBLE = 10;
 const NAME_COL = 12;
-const HIGHLIGHT_BG = "#EFA56A";
-const SURFACE_BG = "#141414";
-const SELECTED_FG = "#1A1A1A";
-const NAME_FG = "#D4D4D4";
-const DESC_FG = "#6B6B6B";
 
 interface CommandPopoverProps {
   commands: Command[];
@@ -29,6 +25,7 @@ export function CommandPopover({
   onHover,
   onSelect,
 }: CommandPopoverProps) {
+  const theme = useTheme();
   const scrollRef = useRef<ScrollBoxRenderable | null>(null);
   const visibleRows = Math.min(commands.length, MAX_VISIBLE);
 
@@ -44,36 +41,36 @@ export function CommandPopover({
       width={width}
       height={visibleRows}
       style={{
-        rootOptions: { backgroundColor: SURFACE_BG },
-        wrapperOptions: { backgroundColor: SURFACE_BG },
-        viewportOptions: { backgroundColor: SURFACE_BG },
-        contentOptions: { backgroundColor: SURFACE_BG },
+        rootOptions: { backgroundColor: theme.panel },
+        wrapperOptions: { backgroundColor: theme.panel },
+        viewportOptions: { backgroundColor: theme.panel },
+        contentOptions: { backgroundColor: theme.panel },
         scrollbarOptions: {
           showArrows: false,
           trackOptions: {
-            foregroundColor: "#3A3A3A",
-            backgroundColor: SURFACE_BG,
+            foregroundColor: theme.scrollbarTrackMuted,
+            backgroundColor: theme.panel,
           },
         },
       }}
     >
       {commands.map((command, i) => {
         const selected = i === selectedIndex;
-        const fg = selected ? SELECTED_FG : undefined;
+        const fg = selected ? theme.highlightText : undefined;
         return (
           <box
             key={command.name}
             id={rowId(command.name)}
             flexDirection="row"
             width="100%"
-            backgroundColor={selected ? HIGHLIGHT_BG : SURFACE_BG}
+            backgroundColor={selected ? theme.highlight : theme.panel}
             onMouseMove={() => onHover(i)}
             onMouseDown={() => onSelect(command)}
           >
             <box width={NAME_COL} paddingLeft={1} flexShrink={0}>
-              <text fg={fg ?? NAME_FG}>/{command.name}</text>
+              <text fg={fg ?? theme.textSecondary}>/{command.name}</text>
             </box>
-            <text fg={fg ?? DESC_FG}>{command.description}</text>
+            <text fg={fg ?? theme.textFaint}>{command.description}</text>
           </box>
         );
       })}

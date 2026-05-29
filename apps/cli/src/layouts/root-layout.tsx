@@ -6,6 +6,7 @@ import { Outlet, useLocation, useNavigate } from "react-router";
 import { ChatTextarea } from "../components/chat-textarea";
 import { useDialog } from "../components/dialog-context";
 import { SessionsDialog } from "../components/sessions-dialog";
+import { ThemesDialog } from "../components/themes-dialog";
 import { client } from "../lib/client";
 import { useChatInput } from "../lib/chat-input-context";
 import {
@@ -13,6 +14,7 @@ import {
   useKeyboardLayer,
 } from "../lib/keyboard-layers";
 import { useModeContext } from "../lib/mode-context";
+import { useTheme } from "../lib/theme";
 import type { Command } from "../lib/commands";
 
 export function RootLayout() {
@@ -22,6 +24,7 @@ export function RootLayout() {
   const { submit: activeChatSubmit } = useChatInput();
   const { cycleMode, cycleModePrev } = useModeContext();
   const { open: openDialog } = useDialog();
+  const theme = useTheme();
   const [creatingSession, setCreatingSession] = useState(false);
   const isHome = location.pathname === "/";
 
@@ -69,11 +72,12 @@ export function RootLayout() {
         openDialog(
           <SessionsDialog onSelectSession={(id) => navigate(`/sessions/${id}`)} />,
         ),
+      openThemes: () => openDialog(<ThemesDialog />),
     });
   };
 
   return (
-    <box flexDirection="column" flexGrow={1} backgroundColor="#0A0A0A">
+    <box flexDirection="column" flexGrow={1} backgroundColor={theme.background}>
       <box
         flexDirection="row"
         justifyContent="space-between"
@@ -81,10 +85,11 @@ export function RootLayout() {
         paddingRight={1}
         borderStyle="single"
         border={["bottom"]}
+        borderColor={theme.border}
         flexShrink={0}
       >
-        <text attributes={TextAttributes.BOLD}>Lightcode</text>
-        <text attributes={TextAttributes.DIM}>
+        <text fg={theme.text} attributes={TextAttributes.BOLD}>Lightcode</text>
+        <text fg={theme.text} attributes={TextAttributes.DIM}>
           Current: {location.pathname}
         </text>
       </box>

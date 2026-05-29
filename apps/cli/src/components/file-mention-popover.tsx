@@ -1,11 +1,8 @@
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useEffect, useRef } from "react";
+import { useTheme } from "../lib/theme";
 
 const MAX_VISIBLE = 10;
-const HIGHLIGHT_BG = "#EFA56A";
-const SURFACE_BG = "#141414";
-const SELECTED_FG = "#1A1A1A";
-const PATH_FG = "#D4D4D4";
 
 interface FileMentionPopoverProps {
   files: string[];
@@ -32,6 +29,7 @@ export function FileMentionPopover({
   onHover,
   onSelect,
 }: FileMentionPopoverProps) {
+  const theme = useTheme();
   const scrollRef = useRef<ScrollBoxRenderable | null>(null);
   const visibleRows = Math.min(files.length, MAX_VISIBLE);
   const maxText = width - 1;
@@ -48,15 +46,15 @@ export function FileMentionPopover({
       width={width}
       height={visibleRows}
       style={{
-        rootOptions: { backgroundColor: SURFACE_BG },
-        wrapperOptions: { backgroundColor: SURFACE_BG },
-        viewportOptions: { backgroundColor: SURFACE_BG },
-        contentOptions: { backgroundColor: SURFACE_BG },
+        rootOptions: { backgroundColor: theme.panel },
+        wrapperOptions: { backgroundColor: theme.panel },
+        viewportOptions: { backgroundColor: theme.panel },
+        contentOptions: { backgroundColor: theme.panel },
         scrollbarOptions: {
           showArrows: false,
           trackOptions: {
-            foregroundColor: "#3A3A3A",
-            backgroundColor: SURFACE_BG,
+            foregroundColor: theme.scrollbarTrackMuted,
+            backgroundColor: theme.panel,
           },
         },
       }}
@@ -70,11 +68,11 @@ export function FileMentionPopover({
             flexDirection="row"
             width="100%"
             paddingLeft={1}
-            backgroundColor={selected ? HIGHLIGHT_BG : SURFACE_BG}
+            backgroundColor={selected ? theme.highlight : theme.panel}
             onMouseMove={() => onHover(i)}
             onMouseDown={() => onSelect(path)}
           >
-            <text fg={selected ? SELECTED_FG : PATH_FG}>
+            <text fg={selected ? theme.highlightText : theme.textSecondary}>
               {truncate(path, maxText)}
             </text>
           </box>

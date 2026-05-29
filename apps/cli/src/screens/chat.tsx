@@ -16,6 +16,7 @@ import { ChatMessage, LeftBorderBlock } from "../components/chat-message";
 import { client } from "../lib/client";
 import { useRegisterChatInput } from "../lib/chat-input-context";
 import { useModeContext } from "../lib/mode-context";
+import { useTheme } from "../lib/theme";
 
 function hasVisibleContent(message: CodingAgentUIMessage): boolean {
   return message.parts.some((p) => {
@@ -28,6 +29,7 @@ function hasVisibleContent(message: CodingAgentUIMessage): boolean {
 export function Chat() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const theme = useTheme();
   const [history, setHistory] = useState<CodingAgentUIMessage[] | null>(null);
   const [initialModeMap, setInitialModeMap] = useState<Map<string, string>>(new Map());
 
@@ -65,7 +67,7 @@ export function Chat() {
   if (!id || history === null) {
     return (
       <box flexGrow={1} padding={1}>
-        <text fg="#888888">Loading session…</text>
+        <text fg={theme.textMuted}>Loading session…</text>
       </box>
     );
   }
@@ -88,6 +90,7 @@ interface ChatSessionProps {
 
 function ChatSession({ sessionId, initialMessages, initialModeMap }: ChatSessionProps) {
   const location = useLocation();
+  const theme = useTheme();
   const parsed = chatLocationStateSchema.safeParse(location.state);
   const initialInput = parsed.success ? parsed.data.input : "";
 
@@ -161,8 +164,8 @@ function ChatSession({ sessionId, initialMessages, initialModeMap }: ChatSession
         />
       ))}
       {showThinking && (
-        <LeftBorderBlock borderColor="#666666">
-          <text fg="#888888">Thinking...</text>
+        <LeftBorderBlock borderColor={theme.border}>
+          <text fg={theme.textMuted}>Thinking...</text>
         </LeftBorderBlock>
       )}
       {error && <ChatError error={error} />}
