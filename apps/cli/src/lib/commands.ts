@@ -1,4 +1,5 @@
 import type { NavigateFunction } from "react-router";
+import { toast } from "./toast";
 
 export interface CommandContext {
   navigate: NavigateFunction;
@@ -33,6 +34,31 @@ export const commands: Command[] = [
     name: "exit",
     description: "Close Lightcode",
     run: ({ exit }) => exit(),
+  },
+  {
+    name: "toast",
+    description: "Show a default toast",
+    run: () => toast("Heads up", { description: "This is a default toast" }),
+  },
+  {
+    name: "success",
+    description: "Show a success toast",
+    run: () => toast.success("Saved", { description: "Your changes were saved" }),
+  },
+  {
+    name: "error",
+    description: "Show an error toast",
+    run: () => toast.error("Something went wrong", { description: "Could not reach the server" }),
+  },
+  {
+    name: "info",
+    description: "Show an info toast",
+    run: () => toast.info("Did you know?", { description: "Press / to open commands" }),
+  },
+  {
+    name: "warning",
+    description: "Show a warning toast",
+    run: () => toast.warning("Heads up", { description: "Your session is about to expire" }),
   },
   ...Array.from({ length: 10 }, (_, i) => ({
     name: `dummy${i + 1}`,

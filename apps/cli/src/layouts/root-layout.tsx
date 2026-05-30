@@ -7,6 +7,7 @@ import { ChatTextarea } from "../components/chat-textarea";
 import { useDialog } from "../components/dialog-context";
 import { SessionsDialog } from "../components/sessions-dialog";
 import { ThemesDialog } from "../components/themes-dialog";
+import { Toaster } from "../components/toaster";
 import { client } from "../lib/client";
 import { useChatInput } from "../lib/chat-input-context";
 import {
@@ -78,6 +79,7 @@ export function RootLayout() {
 
   return (
     <box flexDirection="column" flexGrow={1} backgroundColor={theme.background}>
+      <Toaster />
       <box
         flexDirection="row"
         justifyContent="space-between"

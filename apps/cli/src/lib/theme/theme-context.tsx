@@ -7,8 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { loadThemeName, saveThemeName } from "../config";
-import { getTheme, type ThemeName } from "./theme-service";
-import type { Theme } from "./types";
+import { getTheme, type Theme, type ThemeName } from "./themes";
 
 interface ThemeContextValue {
   theme: Theme;

@@ -6,7 +6,7 @@ import {
   DEFAULT_THEME_NAME,
   themes,
   type ThemeName,
-} from "./theme/theme-service";
+} from "./theme/themes";
 
 const themeNames = Object.keys(themes) as [ThemeName, ...ThemeName[]];
 
