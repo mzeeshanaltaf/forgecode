@@ -2,6 +2,7 @@ import {
   DefaultChatTransport,
   lastAssistantMessageIsCompleteWithToolCalls,
   type ChatAddToolOutputFunction,
+  type HttpChatTransportInitOptions,
   type UIMessage,
 } from "ai";
 import { handlers } from "./tools/handlers";
@@ -10,19 +11,28 @@ import type { ModeName } from "./modes";
 
 export { lastAssistantMessageIsCompleteWithToolCalls };
 
-export interface CreateChatTransportParams {
+export interface CreateChatTransportParams<UI_MESSAGE extends UIMessage> {
   url: string;
   cwd: string;
   getMode: () => ModeName;
+  /**
+   * Per-request headers (e.g. an auth bearer token). The transport fetches the
+   * streaming endpoint directly rather than through the RPC client, so anything
+   * that endpoint requires — like auth — must be supplied here. Resolvable, so
+   * a function can mint a fresh token on each send.
+   */
+  headers?: HttpChatTransportInitOptions<UI_MESSAGE>["headers"];
 }
 
 export function createChatTransport<UI_MESSAGE extends UIMessage>({
   url,
   cwd,
   getMode,
-}: CreateChatTransportParams): DefaultChatTransport<UI_MESSAGE> {
+  headers,
+}: CreateChatTransportParams<UI_MESSAGE>): DefaultChatTransport<UI_MESSAGE> {
   return new DefaultChatTransport<UI_MESSAGE>({
     api: url,
+    headers,
     prepareSendMessagesRequest: ({ messages, body }) => ({
       body: { ...body, cwd, mode: getMode(), message: messages[messages.length - 1] },
     }),

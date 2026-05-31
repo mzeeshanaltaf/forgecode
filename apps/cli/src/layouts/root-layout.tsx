@@ -9,6 +9,8 @@ import { SessionsDialog } from "../components/sessions-dialog";
 import { ThemesDialog } from "../components/themes-dialog";
 import { Toaster } from "../components/toaster";
 import { client } from "../lib/client";
+import { getValidAccessToken } from "../lib/auth";
+import { toast } from "../lib/toast";
 import { useChatInput } from "../lib/chat-input-context";
 import {
   KeyboardLayerPriority,
@@ -49,6 +51,17 @@ export function RootLayout() {
   );
 
   const handleSubmit = async (value: string) => {
+    // The server gates every /sessions route behind auth, so a message sent
+    // without a usable token just 401s with no visible result. Check for one up
+    // front (this also refreshes a near-expiry token) and surface a toast
+    // otherwise — covering both an explicit /logout and a session whose token
+    // expired mid-chat and couldn't refresh, for the home and in-chat inputs
+    // alike. Commands (/login, etc.) go through onCommand and aren't affected.
+    const token = await getValidAccessToken();
+    if (!token) {
+      toast.warning("Not signed in", { description: "Type /login to send messages." });
+      return;
+    }
     if (activeChatSubmit) {
       activeChatSubmit(value);
       return;

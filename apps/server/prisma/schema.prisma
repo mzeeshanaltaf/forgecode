@@ -9,6 +9,10 @@ generator client {
 
 model Session {
   id        String   @id @default(cuid())
+  // Clerk user id (the OAuth token's `subject`). Every session is created by an
+  // authenticated user; listing/lookup filter by it so users only ever see
+  // their own sessions.
+  userId    String
   title     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -16,6 +20,8 @@ model Session {
   messages  Message[]
   toolCalls ToolCall[]
   errors    SessionError[]
+
+  @@index([userId, updatedAt])
 }
 
 model Message {

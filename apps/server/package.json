@@ -13,6 +13,7 @@
     "db:studio": "bunx --bun prisma studio"
   },
   "dependencies": {
+    "@clerk/backend": "^3.4.14",
     "@lightcode/ai": "workspace:*",
     "@lightcode/shared": "workspace:*",
     "@prisma/adapter-pg": "^7.8.0",

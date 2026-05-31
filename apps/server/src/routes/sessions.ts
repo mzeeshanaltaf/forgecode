@@ -6,6 +6,7 @@ import {
 import { extractToolRows, type StoredPart } from "@lightcode/ai/parts";
 import { postMessageRequestSchema, type UIMessage } from "@lightcode/ai/messages";
 import { prisma } from "../db";
+import { clerkAuth, type AuthEnv } from "../middleware/auth";
 import { MessageRole, type Prisma } from "../../generated/client";
 
 function roleOf(role: string): MessageRole {
@@ -21,9 +22,11 @@ function roleOf(role: string): MessageRole {
   }
 }
 
-export const sessionsRoute = new Hono()
+export const sessionsRoute = new Hono<AuthEnv>()
+  .use(clerkAuth)
   .get("/", async (c) => {
     const sessions = await prisma.session.findMany({
+      where: { userId: c.get("userId") },
       orderBy: { updatedAt: "desc" },
       select: { id: true, title: true, updatedAt: true },
     });
@@ -36,12 +39,16 @@ export const sessionsRoute = new Hono()
     });
   })
   .post("/", async (c) => {
-    const session = await prisma.session.create({ data: {} });
+    const session = await prisma.session.create({
+      data: { userId: c.get("userId") },
+    });
     return c.json({ id: session.id });
   })
   .get("/:id/messages", async (c) => {
     const id = c.req.param("id");
-    const session = await prisma.session.findUnique({ where: { id } });
+    const session = await prisma.session.findFirst({
+      where: { id, userId: c.get("userId") },
+    });
     if (!session) {
       return c.json({ error: "session not found" }, 404);
     }
@@ -59,7 +66,9 @@ export const sessionsRoute = new Hono()
   })
   .post("/:id/messages", async (c) => {
     const id = c.req.param("id");
-    const session = await prisma.session.findUnique({ where: { id } });
+    const session = await prisma.session.findFirst({
+      where: { id, userId: c.get("userId") },
+    });
     if (!session) {
       return c.json({ error: "session not found" }, 404);
     }

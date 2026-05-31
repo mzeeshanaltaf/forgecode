@@ -13,7 +13,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { ChatError } from "../components/chat-error";
 import { ChatMessage, LeftBorderBlock } from "../components/chat-message";
-import { client } from "../lib/client";
+import { authHeaders, client } from "../lib/client";
 import { useRegisterChatInput } from "../lib/chat-input-context";
 import { useModeContext } from "../lib/mode-context";
 import { useTheme } from "../lib/theme";
@@ -103,6 +103,7 @@ function ChatSession({ sessionId, initialMessages, initialModeMap }: ChatSession
         url: client.sessions[":id"].messages.$url({ param: { id: sessionId } }).toString(),
         cwd,
         getMode,
+        headers: authHeaders,
       }),
     [sessionId, cwd, getMode],
   );

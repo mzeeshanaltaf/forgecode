@@ -1,4 +1,5 @@
 import type { NavigateFunction } from "react-router";
+import { login, logout, whoami } from "./auth";
 import { toast } from "./toast";
 
 export interface CommandContext {
@@ -29,6 +30,27 @@ export const commands: Command[] = [
     name: "theme",
     description: "Switch theme",
     run: ({ openThemes }) => openThemes(),
+  },
+  {
+    name: "login",
+    description: "Sign in with your browser",
+    run: () => {
+      void login();
+    },
+  },
+  {
+    name: "logout",
+    description: "Sign out and clear the saved session",
+    run: () => {
+      void logout();
+    },
+  },
+  {
+    name: "whoami",
+    description: "Show the signed-in account and token status",
+    run: () => {
+      void whoami();
+    },
   },
   {
     name: "exit",
