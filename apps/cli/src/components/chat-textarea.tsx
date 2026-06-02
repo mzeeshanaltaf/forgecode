@@ -2,11 +2,9 @@ import { TextAttributes, type TextareaRenderable } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";
 import { useEffect, useRef, useState } from "react";
 import { modes } from "@lightcode/ai/modes";
-import {
-  CODING_AGENT_MODEL_ID,
-  CODING_AGENT_PROVIDER,
-} from "@lightcode/ai/model";
+import { getModel, PROVIDER_LABELS } from "@lightcode/ai/registry";
 import { useModeContext } from "../lib/mode-context";
+import { useModelContext } from "../lib/model-context";
 import { useTheme } from "../lib/theme";
 import {
   KeyboardLayerPriority,
@@ -57,9 +55,11 @@ export function ChatTextarea({ onSubmit, onCommand, placeholder }: ChatTextareaP
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [files, setFiles] = useState<string[]>([]);
   const { mode } = useModeContext();
+  const { modelId } = useModelContext();
   const theme = useTheme();
   const modeDef = modes[mode];
   const modeColor = theme.mode[mode] ?? theme.text;
+  const model = getModel(modelId);
 
   // A leading "/" command takes precedence over an "@" file mention; the two
   // contexts are otherwise mutually exclusive.
@@ -272,8 +272,8 @@ export function ChatTextarea({ onSubmit, onCommand, placeholder }: ChatTextareaP
               ● {modeDef.label}
             </text>
             <text fg={theme.textSubtle}> · </text>
-            <text fg={theme.text}>{CODING_AGENT_MODEL_ID}</text>
-            <text fg={theme.textSubtle}> {CODING_AGENT_PROVIDER}</text>
+            <text fg={theme.text}>{model.label}</text>
+            <text fg={theme.textSubtle}> {PROVIDER_LABELS[model.provider]}</text>
           </box>
           <text> </text>
         </box>

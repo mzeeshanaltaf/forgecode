@@ -1,8 +1,5 @@
 import { Hono } from "hono";
-import {
-  CODING_AGENT_MODEL_ID,
-  runCodingTurn,
-} from "@lightcode/ai/agent";
+import { runCodingTurn } from "@lightcode/ai/agent";
 import { extractToolRows, type StoredPart } from "@lightcode/ai/parts";
 import { postMessageRequestSchema, type UIMessage } from "@lightcode/ai/messages";
 import { prisma } from "../db";
@@ -19,6 +16,51 @@ function roleOf(role: string): MessageRole {
       return MessageRole.system;
     default:
       throw new Error(`unsupported role: ${role}`);
+  }
+}
+
+/**
+ * Upserts a message and re-syncs its auxiliary tool-call rows. Used for both the
+ * incoming user message and the assistant response. The upsert (rather than a
+ * plain create) is essential for the assistant: during a client-side tool loop
+ * the CLI re-sends the conversation to continue, and the SDK keeps the same
+ * assistant message id across those turns — so onFinish fires repeatedly for an
+ * id whose row already exists. `model` is left undefined for messages that have
+ * none (user turns), which Prisma ignores on update and stores as null on create.
+ */
+async function persistMessage(params: {
+  sessionId: string;
+  message: UIMessage;
+  mode: string;
+  model?: string;
+}): Promise<void> {
+  const { sessionId, message, mode, model } = params;
+  const parts = message.parts as unknown as Prisma.InputJsonValue;
+
+  const upserted = await prisma.message.upsert({
+    where: { sessionId_clientId: { sessionId, clientId: message.id } },
+    update: { role: roleOf(message.role), model, mode, parts },
+    create: { sessionId, clientId: message.id, role: roleOf(message.role), model, mode, parts },
+  });
+
+  // Re-sync auxiliary tool-call rows from the (possibly updated) parts so the
+  // side table reflects the latest input/output state for this message.
+  const toolRows = extractToolRows(message.parts as StoredPart[]);
+  await prisma.toolCall.deleteMany({ where: { messageId: upserted.id } });
+  if (toolRows.length > 0) {
+    await prisma.toolCall.createMany({
+      data: toolRows.map((row) => ({
+        sessionId,
+        messageId: upserted.id,
+        toolCallId: row.toolCallId,
+        toolName: row.toolName,
+        state: row.state,
+        input: row.input === undefined ? undefined : (row.input as Prisma.InputJsonValue),
+        output: row.output === undefined ? undefined : (row.output as Prisma.InputJsonValue),
+        errorText: row.errorText,
+        providerExecuted: row.providerExecuted,
+      })),
+    });
   }
 }
 
@@ -82,42 +124,9 @@ export const sessionsRoute = new Hono<AuthEnv>()
     const incoming = parsed.data.message as UIMessage;
     const cwd = parsed.data.cwd;
     const mode = parsed.data.mode;
+    const model = parsed.data.model;
 
-    const upserted = await prisma.message.upsert({
-      where: { sessionId_clientId: { sessionId: id, clientId: incoming.id } },
-      update: {
-        role: roleOf(incoming.role),
-        mode,
-        parts: incoming.parts as unknown as Prisma.InputJsonValue,
-      },
-      create: {
-        sessionId: id,
-        clientId: incoming.id,
-        role: roleOf(incoming.role),
-        mode,
-        parts: incoming.parts as unknown as Prisma.InputJsonValue,
-      },
-    });
-
-    // Re-sync auxiliary tool-call rows from the (possibly updated) parts so that
-    // the side table reflects the latest input/output state for this message.
-    const incomingToolRows = extractToolRows(incoming.parts as StoredPart[]);
-    await prisma.toolCall.deleteMany({ where: { messageId: upserted.id } });
-    if (incomingToolRows.length > 0) {
-      await prisma.toolCall.createMany({
-        data: incomingToolRows.map((row) => ({
-          sessionId: id,
-          messageId: upserted.id,
-          toolCallId: row.toolCallId,
-          toolName: row.toolName,
-          state: row.state,
-          input: row.input === undefined ? undefined : (row.input as Prisma.InputJsonValue),
-          output: row.output === undefined ? undefined : (row.output as Prisma.InputJsonValue),
-          errorText: row.errorText,
-          providerExecuted: row.providerExecuted,
-        })),
-      });
-    }
+    await persistMessage({ sessionId: id, message: incoming, mode });
 
     const historyRows = await prisma.message.findMany({
       where: { sessionId: id },
@@ -133,6 +142,7 @@ export const sessionsRoute = new Hono<AuthEnv>()
       history,
       cwd,
       mode,
+      model,
       onError: async (err) => {
         await prisma.sessionError
           .create({
@@ -147,33 +157,7 @@ export const sessionsRoute = new Hono<AuthEnv>()
           });
       },
       onFinish: async ({ responseMessage }) => {
-        const created = await prisma.message.create({
-          data: {
-            sessionId: id,
-            clientId: responseMessage.id,
-            role: roleOf(responseMessage.role),
-            model: CODING_AGENT_MODEL_ID,
-            mode,
-            parts: responseMessage.parts as unknown as Prisma.InputJsonValue,
-          },
-        });
-        const toolRows = extractToolRows(responseMessage.parts as StoredPart[]);
-        if (toolRows.length > 0) {
-          await prisma.toolCall.createMany({
-            data: toolRows.map((row) => ({
-              sessionId: id,
-              messageId: created.id,
-              toolCallId: row.toolCallId,
-              toolName: row.toolName,
-              state: row.state,
-              input: row.input === undefined ? undefined : (row.input as Prisma.InputJsonValue),
-              output: row.output === undefined ? undefined : (row.output as Prisma.InputJsonValue),
-              errorText: row.errorText,
-              providerExecuted: row.providerExecuted,
-            })),
-            skipDuplicates: true,
-          });
-        }
+        await persistMessage({ sessionId: id, message: responseMessage, mode, model });
       },
     });
   });

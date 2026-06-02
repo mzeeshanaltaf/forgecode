@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DEFAULT_MODE, modeSchema } from "./modes";
+import { DEFAULT_MODEL_ID, modelIdSchema } from "./registry";
 
 export type { UIMessage } from "ai";
 
@@ -21,6 +22,7 @@ export const postMessageRequestSchema = z.object({
   message: uiMessageSchema,
   cwd: z.string().min(1),
   mode: modeSchema.default(DEFAULT_MODE),
+  model: modelIdSchema.default(DEFAULT_MODEL_ID),
 });
 
 export type PostMessageRequest = z.infer<typeof postMessageRequestSchema>;

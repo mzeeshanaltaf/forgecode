@@ -9,13 +9,16 @@
     "./agent": "./src/agent.ts",
     "./messages": "./src/messages.ts",
     "./modes": "./src/modes.ts",
-    "./model": "./src/model.ts",
+    "./registry": "./src/registry.ts",
+    "./provider": "./src/provider.ts",
     "./parts": "./src/parts.ts",
     "./client": "./src/client.ts",
     "./tools": "./src/tools/index.ts",
     "./tools/handlers": "./src/tools/handlers.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.81",
+    "@ai-sdk/google": "^3.0.80",
     "@ai-sdk/openai": "^3.0.63",
     "ai": "^6.0.182",
     "zod": "^4.4.3"

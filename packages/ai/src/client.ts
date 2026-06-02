@@ -15,6 +15,10 @@ export interface CreateChatTransportParams<UI_MESSAGE extends UIMessage> {
   url: string;
   cwd: string;
   getMode: () => ModeName;
+  /** Resolves the registry model id to run this turn with. A getter (like
+   *  getMode) so a mid-session model switch is picked up without rebuilding the
+   *  transport. */
+  getModel: () => string;
   /**
    * Per-request headers (e.g. an auth bearer token). The transport fetches the
    * streaming endpoint directly rather than through the RPC client, so anything
@@ -28,13 +32,14 @@ export function createChatTransport<UI_MESSAGE extends UIMessage>({
   url,
   cwd,
   getMode,
+  getModel,
   headers,
 }: CreateChatTransportParams<UI_MESSAGE>): DefaultChatTransport<UI_MESSAGE> {
   return new DefaultChatTransport<UI_MESSAGE>({
     api: url,
     headers,
     prepareSendMessagesRequest: ({ messages, body }) => ({
-      body: { ...body, cwd, mode: getMode(), message: messages[messages.length - 1] },
+      body: { ...body, cwd, mode: getMode(), model: getModel(), message: messages[messages.length - 1] },
     }),
   });
 }

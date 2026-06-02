@@ -16,6 +16,7 @@ import { ChatMessage, LeftBorderBlock } from "../components/chat-message";
 import { authHeaders, client } from "../lib/client";
 import { useRegisterChatInput } from "../lib/chat-input-context";
 import { useModeContext } from "../lib/mode-context";
+import { useModelContext } from "../lib/model-context";
 import { useTheme } from "../lib/theme";
 
 function hasVisibleContent(message: CodingAgentUIMessage): boolean {
@@ -96,6 +97,7 @@ function ChatSession({ sessionId, initialMessages, initialModeMap }: ChatSession
 
   const cwd = useMemo(() => process.cwd(), []);
   const { getMode } = useModeContext();
+  const { getModelId } = useModelContext();
 
   const transport = useMemo(
     () =>
@@ -103,9 +105,10 @@ function ChatSession({ sessionId, initialMessages, initialModeMap }: ChatSession
         url: client.sessions[":id"].messages.$url({ param: { id: sessionId } }).toString(),
         cwd,
         getMode,
+        getModel: getModelId,
         headers: authHeaders,
       }),
-    [sessionId, cwd, getMode],
+    [sessionId, cwd, getMode, getModelId],
   );
   const { messages, sendMessage, status, error, addToolOutput } = useChat<CodingAgentUIMessage>({
     id: sessionId,

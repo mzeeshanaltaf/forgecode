@@ -1,4 +1,3 @@
-import { openai } from "@ai-sdk/openai";
 import {
   convertToModelMessages,
   generateId,
@@ -15,14 +14,8 @@ import {
 import { z } from "zod";
 import { tools as agentTools } from "./tools";
 import { DEFAULT_MODE, modes, modeSchema, type ModeName } from "./modes";
-import { CODING_AGENT_MODEL_ID as MODEL_ID } from "./model";
-
-export { CODING_AGENT_MODEL_ID } from "./model";
-
-const SERVICE_TIER = z
-  .enum(["default", "auto", "flex", "priority"])
-  .optional()
-  .parse(process.env.OPENAI_SERVICE_TIER || undefined);
+import { DEFAULT_MODEL_ID, modelIdSchema } from "./registry";
+import { providerOptionsFor, resolveLanguageModel } from "./provider";
 
 const baseInstructions = [
   "You are a coding agent.",
@@ -44,21 +37,22 @@ const toolDefs: ToolSet = Object.fromEntries(
 const callOptionsSchema = z.object({
   cwd: z.string().min(1),
   mode: modeSchema.default(DEFAULT_MODE),
+  model: modelIdSchema.default(DEFAULT_MODEL_ID),
 });
 
 export const codingAgent = new ToolLoopAgent({
-  model: openai(MODEL_ID),
+  model: resolveLanguageModel(DEFAULT_MODEL_ID),
   instructions: baseInstructions,
   tools: toolDefs,
   stopWhen: stepCountIs(16),
-  providerOptions: {
-    openai: { reasoningSummary: "auto", serviceTier: SERVICE_TIER },
-  },
+  providerOptions: providerOptionsFor(DEFAULT_MODEL_ID),
   callOptionsSchema,
   prepareCall: ({ options, ...settings }) => {
     const def = modes[options.mode];
     return {
       ...settings,
+      model: resolveLanguageModel(options.model),
+      providerOptions: providerOptionsFor(options.model),
       instructions: [
         settings.instructions ?? "",
         def.instructions,
@@ -76,7 +70,8 @@ export const codingAgent = new ToolLoopAgent({
     if (!matched?.inputSchema) return null;
     try {
       const repair = await generateText({
-        model: openai(MODEL_ID),
+        model: resolveLanguageModel(DEFAULT_MODEL_ID),
+        providerOptions: providerOptionsFor(DEFAULT_MODEL_ID),
         output: Output.object({ schema: matched.inputSchema as never }),
         prompt: [
           `The previous call to tool "${toolCall.toolName}" had malformed input.`,
@@ -104,17 +99,18 @@ export interface RunCodingTurnParams {
   history: UIMessage[];
   cwd: string;
   mode?: ModeName;
+  model?: string;
   onError?: (err: Error) => void | Promise<void>;
   onFinish?: (args: { responseMessage: UIMessage }) => void | Promise<void>;
 }
 
 export async function runCodingTurn(params: RunCodingTurnParams): Promise<Response> {
-  const { history, cwd, mode = DEFAULT_MODE, onError, onFinish } = params;
+  const { history, cwd, mode = DEFAULT_MODE, model = DEFAULT_MODEL_ID, onError, onFinish } = params;
   const modelMessages = await convertToModelMessages(history);
 
   const result = await codingAgent.stream({
     messages: modelMessages,
-    options: { cwd, mode },
+    options: { cwd, mode, model },
   });
 
   return result.toUIMessageStreamResponse({

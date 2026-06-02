@@ -7,6 +7,7 @@ export interface CommandContext {
   exit: () => void;
   openSessions: () => void;
   openThemes: () => void;
+  openModels: () => void;
 }
 
 export interface Command {
@@ -30,6 +31,11 @@ export const commands: Command[] = [
     name: "theme",
     description: "Switch theme",
     run: ({ openThemes }) => openThemes(),
+  },
+  {
+    name: "model",
+    description: "Switch model",
+    run: ({ openModels }) => openModels(),
   },
   {
     name: "login",

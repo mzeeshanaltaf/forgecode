@@ -7,6 +7,7 @@ import { ChatTextarea } from "../components/chat-textarea";
 import { useDialog } from "../components/dialog-context";
 import { SessionsDialog } from "../components/sessions-dialog";
 import { ThemesDialog } from "../components/themes-dialog";
+import { ModelsDialog } from "../components/models-dialog";
 import { Toaster } from "../components/toaster";
 import { client } from "../lib/client";
 import { getValidAccessToken } from "../lib/auth";
@@ -87,6 +88,7 @@ export function RootLayout() {
           <SessionsDialog onSelectSession={(id) => navigate(`/sessions/${id}`)} />,
         ),
       openThemes: () => openDialog(<ThemesDialog />),
+      openModels: () => openDialog(<ModelsDialog />),
     });
   };
 
