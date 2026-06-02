@@ -1,8 +1,23 @@
 import { TextAttributes } from "@opentui/core";
 import type { ReactNode } from "react";
 import type { CodingAgentUIMessage } from "@lightcode/ai";
-import type { ModeName } from "@lightcode/ai/modes";
+import { modes, type ModeName } from "@lightcode/ai/modes";
+import { MODELS } from "@lightcode/ai/registry";
 import { useTheme } from "../lib/theme";
+
+const MODEL_LABELS = new Map<string, string>(MODELS.map((m) => [m.id, m.label]));
+
+/** Resolves mode/model ids to display labels — null when either is missing. */
+function metaLabels(
+  mode: string | null,
+  model: string | null,
+): { modeLabel: string; modelLabel: string } | null {
+  if (!mode || !model) return null;
+  return {
+    modeLabel: modes[mode as ModeName]?.label ?? mode,
+    modelLabel: MODEL_LABELS.get(model) ?? model,
+  };
+}
 
 interface LeftBorderBlockProps {
   borderColor: string;
@@ -36,6 +51,9 @@ export function LeftBorderBlock({
 interface ChatMessageProps {
   message: CodingAgentUIMessage;
   mode?: string | null;
+  model?: string | null;
+  /** Render the "Mode - Model" footer (assistant turns, after streaming ends). */
+  showMeta?: boolean;
 }
 
 type MessagePart = CodingAgentUIMessage["parts"][number];
@@ -61,7 +79,7 @@ function describeToolInput(part: ToolPart): string | null {
   return null;
 }
 
-export function ChatMessage({ message, mode }: ChatMessageProps) {
+export function ChatMessage({ message, mode, model, showMeta }: ChatMessageProps) {
   const theme = useTheme();
   const borderColor = (mode && theme.mode[mode as ModeName]) ?? theme.accent;
   const isUser = message.role === "user";
@@ -118,9 +136,20 @@ export function ChatMessage({ message, mode }: ChatMessageProps) {
     );
   }
 
+  const meta = showMeta ? metaLabels(mode ?? null, model ?? null) : null;
+  const modeColor = (mode && theme.mode[mode as ModeName]) ?? theme.accent;
+
   return (
     <box flexDirection="column" marginBottom={1}>
       {parts}
+      {meta && (
+        <text marginTop={1} marginLeft={2}>
+          <span fg={modeColor}>{meta.modeLabel}</span>
+          <span fg={theme.textMuted} attributes={TextAttributes.DIM}>
+            {` - ${meta.modelLabel}`}
+          </span>
+        </text>
+      )}
     </box>
   );
 }

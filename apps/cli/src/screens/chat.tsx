@@ -37,6 +37,7 @@ export function Chat() {
   const theme = useTheme();
   const [history, setHistory] = useState<CodingAgentUIMessage[] | null>(null);
   const [initialModeMap, setInitialModeMap] = useState<Map<string, string>>(new Map());
+  const [initialModelMap, setInitialModelMap] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
     if (!id) {
@@ -46,6 +47,7 @@ export function Chat() {
     let cancelled = false;
     setHistory(null);
     setInitialModeMap(new Map());
+    setInitialModelMap(new Map());
     (async () => {
       const response = await client.sessions[":id"].messages.$get({ param: { id } });
       if (cancelled) return;
@@ -60,6 +62,13 @@ export function Chat() {
         return;
       }
       setInitialModeMap(new Map(parsed.data.messages.map((m) => [m.id, m.mode])));
+      setInitialModelMap(
+        new Map(
+          parsed.data.messages
+            .filter((m): m is typeof m & { model: string } => m.model !== null)
+            .map((m) => [m.id, m.model]),
+        ),
+      );
       setHistory(parsed.data.messages as CodingAgentUIMessage[]);
     })().catch(() => {
       if (!cancelled) navigate("/", { replace: true });
@@ -83,6 +92,7 @@ export function Chat() {
       sessionId={id}
       initialMessages={history}
       initialModeMap={initialModeMap}
+      initialModelMap={initialModelMap}
     />
   );
 }
@@ -91,9 +101,10 @@ interface ChatSessionProps {
   sessionId: string;
   initialMessages: CodingAgentUIMessage[];
   initialModeMap: Map<string, string>;
+  initialModelMap: Map<string, string>;
 }
 
-function ChatSession({ sessionId, initialMessages, initialModeMap }: ChatSessionProps) {
+function ChatSession({ sessionId, initialMessages, initialModeMap, initialModelMap }: ChatSessionProps) {
   const location = useLocation();
   const theme = useTheme();
   const parsed = chatLocationStateSchema.safeParse(location.state);
@@ -124,14 +135,21 @@ function ChatSession({ sessionId, initialMessages, initialModeMap }: ChatSession
   });
 
   const messageModeMap = useRef<Map<string, string>>(new Map(initialModeMap));
+  const messageModelMap = useRef<Map<string, string>>(new Map(initialModelMap));
   const pendingModeRef = useRef<string>(getMode());
+  const pendingModelRef = useRef<string>(getModelId());
   const [, forceUpdate] = useState(0);
 
   useEffect(() => {
     let updated = false;
     for (const msg of messages) {
-      if (msg.role === "user" && !messageModeMap.current.has(msg.id)) {
+      if (!messageModeMap.current.has(msg.id)) {
         messageModeMap.current.set(msg.id, pendingModeRef.current);
+        updated = true;
+      }
+      // Model only applies to assistant turns (the response the metadata labels).
+      if (msg.role === "assistant" && !messageModelMap.current.has(msg.id)) {
+        messageModelMap.current.set(msg.id, pendingModelRef.current);
         updated = true;
       }
     }
@@ -143,6 +161,7 @@ function ChatSession({ sessionId, initialMessages, initialModeMap }: ChatSession
   useRegisterChatInput((value) => {
     if (!value.trim()) return;
     pendingModeRef.current = getMode();
+    pendingModelRef.current = getModelId();
     void sendMessage({ text: value });
   });
 
@@ -151,6 +170,7 @@ function ChatSession({ sessionId, initialMessages, initialModeMap }: ChatSession
     if (sentInitialRef.current || !initialInput) return;
     sentInitialRef.current = true;
     pendingModeRef.current = getMode();
+    pendingModelRef.current = getModelId();
     void sendMessage({ text: initialInput });
   }, [initialInput, sendMessage]);
 
@@ -183,6 +203,7 @@ function ChatSession({ sessionId, initialMessages, initialModeMap }: ChatSession
   );
   const showThinking =
     isBusy && visibleMessages.at(-1)?.role !== "assistant";
+  const streamingId = isBusy ? visibleMessages.at(-1)?.id : undefined;
 
   return (
     <scrollbox flexGrow={1} paddingTop={1} stickyScroll stickyStart="bottom">
@@ -191,6 +212,9 @@ function ChatSession({ sessionId, initialMessages, initialModeMap }: ChatSession
           key={message.id}
           message={message}
           mode={messageModeMap.current.get(message.id) ?? null}
+          model={messageModelMap.current.get(message.id) ?? null}
+          // Hold the "Mode - Model" footer until the response finishes streaming.
+          showMeta={message.role === "assistant" && message.id !== streamingId}
         />
       ))}
       {showThinking && (

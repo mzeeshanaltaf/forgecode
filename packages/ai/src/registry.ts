@@ -51,11 +51,31 @@ export const MODELS = [
     providerOptions: { openai: { reasoningSummary: "detailed" } },
   },
   {
+    id: "gpt-5.1-codex-mini",
+    provider: "openai",
+    label: "GPT-5.1 Codex Mini",
+    // Reasoning model: surface a condensed reasoning summary in the stream.
+    providerOptions: { openai: { reasoningSummary: "detailed" } },
+  },
+  {
+    id: "claude-opus-4-8",
+    provider: "anthropic",
+    label: "Claude Opus 4.8",
+    // Opus 4.8 uses adaptive thinking — Claude picks the reasoning depth.
+    providerOptions: { anthropic: { thinking: { type: "adaptive" } } },
+  },
+  {
     id: "claude-sonnet-4-6",
     provider: "anthropic",
     label: "Claude Sonnet 4.6",
     // Sonnet 4.6+ uses adaptive thinking — Claude picks the reasoning depth.
     providerOptions: { anthropic: { thinking: { type: "adaptive" } } },
+  },
+  {
+    id: "claude-haiku-4-5-20251001",
+    provider: "anthropic",
+    label: "Claude Haiku 4.5",
+    // Haiku 4.5 doesn't support adaptive thinking — omit thinking options.
   },
   {
     id: "gemini-3.5-flash",

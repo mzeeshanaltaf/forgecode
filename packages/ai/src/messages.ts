@@ -31,6 +31,10 @@ const sessionMessageItemSchema = z.looseObject({
   id: z.string(),
   role: z.enum(["system", "user", "assistant"]),
   mode: modeSchema,
+  // Model id used for the response. Null on user/system turns and on assistant
+  // rows persisted before model tracking — kept as a plain string (not
+  // `modelIdSchema`) so removed/renamed model ids don't fail the parse.
+  model: z.string().nullable(),
   parts: z.array(uiMessagePartSchema),
 });
 

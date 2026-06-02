@@ -102,6 +102,7 @@ export const sessionsRoute = new Hono<AuthEnv>()
       id: row.clientId,
       role: row.role,
       mode: row.mode,
+      model: row.model,
       parts: row.parts,
     }));
     return c.json({ messages });
