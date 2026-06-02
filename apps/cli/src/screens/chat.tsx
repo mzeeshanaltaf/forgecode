@@ -15,6 +15,10 @@ import { ChatError } from "../components/chat-error";
 import { ChatMessage, LeftBorderBlock } from "../components/chat-message";
 import { authHeaders, client } from "../lib/client";
 import { useRegisterChatInput } from "../lib/chat-input-context";
+import {
+  KeyboardLayerPriority,
+  useKeyboardLayer,
+} from "../lib/keyboard-layers";
 import { useModeContext } from "../lib/mode-context";
 import { useModelContext } from "../lib/model-context";
 import { useTheme } from "../lib/theme";
@@ -110,7 +114,7 @@ function ChatSession({ sessionId, initialMessages, initialModeMap }: ChatSession
       }),
     [sessionId, cwd, getMode, getModelId],
   );
-  const { messages, sendMessage, status, error, addToolOutput } = useChat<CodingAgentUIMessage>({
+  const { messages, sendMessage, status, error, stop, addToolOutput } = useChat<CodingAgentUIMessage>({
     id: sessionId,
     messages: initialMessages,
     transport,
@@ -152,6 +156,28 @@ function ChatSession({ sessionId, initialMessages, initialModeMap }: ChatSession
 
   const isBusy = status === "submitted" || status === "streaming";
 
+  // Show an "Interrupted by user" notice after Esc aborts a response. Cleared
+  // whenever the next response starts (a new send or a tool-call auto-resend
+  // both flip `isBusy` back on).
+  const [interrupted, setInterrupted] = useState(false);
+  useEffect(() => {
+    if (isBusy) setInterrupted(false);
+  }, [isBusy]);
+
+  // Esc interrupts an in-flight response. Only consume the key while busy so it
+  // stays available to other layers (e.g. a dialog, priority DIALOG) otherwise.
+  useKeyboardLayer(
+    (key) => {
+      if (key.name === "escape" && isBusy) {
+        stop();
+        setInterrupted(true);
+        return true;
+      }
+      return false;
+    },
+    { priority: KeyboardLayerPriority.CHAT_INPUT },
+  );
+
   const visibleMessages = messages.filter(
     (m) => m.role !== "assistant" || hasVisibleContent(m),
   );
@@ -170,6 +196,11 @@ function ChatSession({ sessionId, initialMessages, initialModeMap }: ChatSession
       {showThinking && (
         <LeftBorderBlock borderColor={theme.border}>
           <text fg={theme.textMuted}>Thinking...</text>
+        </LeftBorderBlock>
+      )}
+      {interrupted && (
+        <LeftBorderBlock borderColor={theme.error}>
+          <text fg={theme.textMuted}>⊘ Interrupted by user</text>
         </LeftBorderBlock>
       )}
       {error && <ChatError error={error} />}
