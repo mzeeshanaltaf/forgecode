@@ -35,6 +35,24 @@ export function resolveLanguageModel(modelId: string): LanguageModel {
   return providerFactories[provider](id);
 }
 
+/**
+ * Dedicated model for generating short session titles. Intentionally NOT in the
+ * public {@link MODELS} registry — it's a behind-the-scenes utility model and
+ * should never appear in the user-facing model picker.
+ */
+export const TITLE_MODEL_ID = "gpt-5.4-mini";
+
+/** Resolves the dedicated title-generation model (bypasses the public registry). */
+export function resolveTitleModel(): LanguageModel {
+  const envVar = PROVIDER_API_KEY_ENV.openai;
+  if (!process.env[envVar]) {
+    throw new Error(
+      `Missing ${envVar} for session-title generation (model "${TITLE_MODEL_ID}").`,
+    );
+  }
+  return providerFactories.openai(TITLE_MODEL_ID);
+}
+
 const OPENAI_SERVICE_TIER = z
   .enum(["default", "auto", "flex", "priority"])
   .optional()

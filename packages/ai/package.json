@@ -12,6 +12,7 @@
     "./registry": "./src/registry.ts",
     "./provider": "./src/provider.ts",
     "./parts": "./src/parts.ts",
+    "./title": "./src/title.ts",
     "./client": "./src/client.ts",
     "./tools": "./src/tools/index.ts",
     "./tools/handlers": "./src/tools/handlers.ts"

@@ -20,7 +20,7 @@ export function SessionsDialog({ onSelectSession }: { onSelectSession: (id: stri
         parsed.data.sessions.map((session) => ({
           value: session.id,
           label: session.title ?? "Untitled session",
-          hint: formatDistanceToNow(new Date(session.updatedAt), { addSuffix: true }),
+          hint: `- ${formatDistanceToNow(new Date(session.updatedAt), { addSuffix: true })}`,
         })),
       );
     })()

@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { runCodingTurn } from "@lightcode/ai/agent";
 import { extractToolRows, type StoredPart } from "@lightcode/ai/parts";
 import { postMessageRequestSchema, type UIMessage } from "@lightcode/ai/messages";
+import { generateSessionTitle } from "@lightcode/ai/title";
 import { prisma } from "../db";
 import { clerkAuth, type AuthEnv } from "../middleware/auth";
 import { MessageRole, type Prisma } from "../../generated/client";
@@ -128,6 +129,22 @@ export const sessionsRoute = new Hono<AuthEnv>()
     const model = parsed.data.model;
 
     await persistMessage({ sessionId: id, message: incoming, mode });
+
+    // First message of an untitled session: generate a short title in the
+    // background. Fire-and-forget so it never blocks or breaks the chat turn —
+    // on any failure the session simply stays "Untitled session".
+    if (session.title === null) {
+      void (async () => {
+        try {
+          const title = await generateSessionTitle(incoming);
+          if (title) {
+            await prisma.session.update({ where: { id }, data: { title } });
+          }
+        } catch (err) {
+          console.error("failed to generate session title", err);
+        }
+      })();
+    }
 
     const historyRows = await prisma.message.findMany({
       where: { sessionId: id },
