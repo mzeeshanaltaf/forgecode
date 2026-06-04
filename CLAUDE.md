@@ -83,3 +83,12 @@ Three-layer setup:
 - `tsconfig.base.json` — shared compiler options (strict, `module: Preserve`, `moduleResolution: bundler`, `noEmit: true`, plus `noUncheckedIndexedAccess` and `noImplicitOverride`). Has no `include`/`files`; it's a pure base.
 - `apps/*/tsconfig.json` — each extends `../../tsconfig.base.json`. Only `apps/cli` overrides compiler options (the JSX pair).
 - Root `tsconfig.json` — solution-style: `files: []` plus `references` pointing at each app. Editors use this to discover the project graph; **`tsc -b` from the root will not work** unless each referenced project also opts in to `composite: true`, which would conflict with `noEmit: true`. Type-check per package instead.
+
+## Git commits — match the message syntax to the shell you're using
+
+This is a Windows repo, so two different shells are in play and they have **incompatible** multiline-string syntax. Picking the wrong one silently corrupts the commit message.
+
+- **Bash tool (bash):** never use PowerShell here-strings (`@'...'@`) — bash treats the leading `@` and trailing `@` as literal characters and leaks a stray `@` into the message subject. Use repeated `-m` flags (one per paragraph) or a `$'...'` / heredoc string instead.
+- **PowerShell tool:** use a single-quoted here-string (`@'` … newline … `'@` at column 0), as that tool's own docs describe. Do **not** carry that syntax over to the Bash tool.
+
+If you realise the message is malformed, fix it with `git commit --amend` **before pushing** (and only before — never rewrite already-pushed history). Verify with `git log -1 --format='%s'` after committing.
