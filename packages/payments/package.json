@@ -1,0 +1,17 @@
+{
+  "name": "@lightcode/payments",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./checkout": "./src/checkout.ts",
+    "./ingestion": "./src/ingestion.ts",
+    "./usage": "./src/usage.ts"
+  },
+  "dependencies": {
+    "@polar-sh/sdk": "^0.47.1",
+    "zod": "^4.4.3"
+  }
+}

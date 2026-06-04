@@ -61,6 +61,14 @@
         "zod": "^4.4.3",
       },
     },
+    "packages/payments": {
+      "name": "@lightcode/payments",
+      "version": "0.0.1",
+      "dependencies": {
+        "@polar-sh/sdk": "^0.47.1",
+        "zod": "^4.4.3",
+      },
+    },
     "packages/shared": {
       "name": "@lightcode/shared",
       "version": "0.0.1",
@@ -100,6 +108,8 @@
 
     "@lightcode/ai": ["@lightcode/ai@workspace:packages/ai"],
 
+    "@lightcode/payments": ["@lightcode/payments@workspace:packages/payments"],
+
     "@lightcode/shared": ["@lightcode/shared@workspace:packages/shared"],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.1", "", {}, "sha512-gLyJlPHPZYdAk1JENA9LeHejZe1Ti77/pTeFm/nMXmQH/HFZlcS/O2XJB+L8fkbrNSqhdtlvjBVjxwUYanNH5Q=="],
@@ -119,6 +129,8 @@
     "@opentui/core-win32-x64": ["@opentui/core-win32-x64@0.2.7", "", { "os": "win32", "cpu": "x64" }, "sha512-CzVGEfqysVk8Hxcj0RDv/DtXIM6iZmbmr23kW7y8CJMPtmV1gmKI4D9abVjynWJnGbaSBnDi43mgZnGMgOdyEg=="],
 
     "@opentui/react": ["@opentui/react@0.2.7", "", { "dependencies": { "@opentui/core": "0.2.7", "react-reconciler": "^0.33.0" }, "peerDependencies": { "react": ">=19.2.0", "react-devtools-core": "^7.0.1", "ws": "^8.18.0" } }, "sha512-1p0TsYEgwVfJc0G0URHp9PF16JOA9aVU5PfbzH2Kx1+py3i79x47mnkUMJ9ugYxAaXLrRqbFetnq5v5L6UfI0Q=="],
+
+    "@polar-sh/sdk": ["@polar-sh/sdk@0.47.1", "", { "dependencies": { "standardwebhooks": "^1.0.0", "zod": "^3.25.65 || ^4.0.0" } }, "sha512-fkz7wPLbqfuDmY9LxuXpE2uP2TAV6J0q/YN5hJ4UBxpjbkB0hKM6c4R35N89t83dfzMlG6EOlqOn+Rd1T6XrJQ=="],
 
     "@prisma/adapter-pg": ["@prisma/adapter-pg@7.8.0", "", { "dependencies": { "@prisma/driver-adapter-utils": "7.8.0", "@types/pg": "^8.16.0", "pg": "^8.16.3", "postgres-array": "3.0.4" } }, "sha512-ygb3UkerK3v8MDpXVgCISdRNDozpxh6+JVJgiIGbSr5KBgz10LLf5ejUskPGoXlsIjxsOu6nuy1JVQr2EKGSlg=="],
 
