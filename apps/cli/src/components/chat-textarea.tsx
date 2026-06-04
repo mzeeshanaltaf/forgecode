@@ -22,6 +22,7 @@ import {
 } from "../lib/file-mentions";
 import { CommandPopover } from "./command-popover";
 import { FileMentionPopover } from "./file-mention-popover";
+import { useDialog } from "./dialog-context";
 
 const KEY_BINDINGS: {
   name: string;
@@ -56,6 +57,7 @@ export function ChatTextarea({ onSubmit, onCommand, placeholder }: ChatTextareaP
   const [files, setFiles] = useState<string[]>([]);
   const { mode } = useModeContext();
   const { modelId } = useModelContext();
+  const { isOpen: dialogOpen } = useDialog();
   const theme = useTheme();
   const modeDef = modes[mode];
   const modeColor = theme.mode[mode] ?? theme.text;
@@ -243,7 +245,7 @@ export function ChatTextarea({ onSubmit, onCommand, placeholder }: ChatTextareaP
           <box flexDirection="row" flexGrow={1}>
             <textarea
               ref={textareaRef}
-              focused
+              focused={!dialogOpen}
               wrapMode="word"
               placeholder={placeholder}
               flexGrow={1}

@@ -9,6 +9,7 @@ export interface CommandContext {
   openThemes: () => void;
   openModels: () => void;
   openBalance: () => void;
+  openAbout: () => void;
 }
 
 export interface Command {
@@ -70,6 +71,11 @@ export const commands: Command[] = [
     name: "balance",
     description: "Show remaining credits",
     run: ({ openBalance }) => openBalance(),
+  },
+  {
+    name: "about",
+    description: "About ForgeCode",
+    run: ({ openAbout }) => openAbout(),
   },
   {
     name: "exit",
