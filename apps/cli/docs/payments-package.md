@@ -22,12 +22,13 @@ The Polar IDs are already plumbed into [apps/server/.env.example](../../server/.
 
 ## Billing semantics
 
-- **1 message = 1 credit.** Deduction is computed by the **meter** (`POLAR_CREDITS_METER_ID`, configured in the Polar dashboard), not by our code. The meter is configured to **count events** filtered by `name == "forgecode_usage"` (confirmed from the dashboard's own ingestion sample — see below). Our code's only job is to emit exactly one event with that name per message; the meter turns each event into 1 consumed unit. Any `metadata` we attach (model, route, etc.) is informational/analytics only — it does **not** affect the deduction under a count aggregation.
+- **1 message = 1 credit.** Deduction is computed by the **meter** (`POLAR_CREDITS_METER_ID`, configured in the Polar dashboard), not by our code. The actual meter config is **`aggregation: sum(credits)`** filtered by `name == "forgecode_usage"` — i.e. it sums a metadata property named **`credits`**, it does **not** count events. So every event MUST carry `metadata.credits` or the meter sums nothing and balances never decrement. `ingestUsage` always sets `credits` (default `1`); other `metadata` (model, mode, …) is analytics-only.
 
   ```ts
-  // Dashboard-generated reference (the name MUST match the meter's filter):
+  // The name MUST match the meter filter, and `credits` MUST be present
+  // (the meter sums it):
   await polar.events.ingest({
-    events: [{ name: "forgecode_usage", externalCustomerId, metadata: { /* ... */ } }],
+    events: [{ name: "forgecode_usage", externalCustomerId, metadata: { credits: 1 } }],
   });
   ```
 
@@ -95,7 +96,7 @@ export type PaymentsConfig = z.infer<typeof paymentsConfigSchema>;
 
 ### `ingestion.ts`
 
-- **One call = one message = 1 credit.** Input schema: `{ externalCustomerId: string; metadata?: Record<string, string | number | boolean>; timestamp?: Date }`. The event `name` is **fixed** to the constant `USAGE_EVENT_NAME = "forgecode_usage"` (matches the meter's name filter, per the dashboard sample) — it is *not* a caller input, so the deduction can't accidentally drift. `metadata` is optional/analytics only and does not change the cost.
+- **One call = one message = 1 credit.** Input schema: `{ externalCustomerId: string; credits?: number (default 1); metadata?: Record<string, string | number | boolean>; timestamp?: Date }`. The event `name` is **fixed** to `USAGE_EVENT_NAME = "forgecode_usage"` (matches the meter's name filter) and the function always writes `metadata.credits` (key = `CREDITS_METADATA_KEY`) — the property the `sum(credits)` meter aggregates. Caller `metadata` is merged for analytics but cannot override `credits`, so the deduction rate can't drift.
 - Sends exactly one event: `polar.events.ingest({ events: [{ name: USAGE_EVENT_NAME, externalCustomerId, timestamp, metadata }] })`.
 - Returns `{ inserted: number }` from the response.
 

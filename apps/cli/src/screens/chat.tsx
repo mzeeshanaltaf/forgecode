@@ -21,6 +21,7 @@ import {
 } from "../lib/keyboard-layers";
 import { useModeContext } from "../lib/mode-context";
 import { useModelContext } from "../lib/model-context";
+import { toast } from "../lib/toast";
 import { useTheme } from "../lib/theme";
 
 function hasVisibleContent(message: CodingAgentUIMessage): boolean {
@@ -29,6 +30,21 @@ function hasVisibleContent(message: CodingAgentUIMessage): boolean {
     if (p.type === "reasoning") return p.text.length > 0;
     return p.type === "dynamic-tool" || p.type.startsWith("tool-");
   });
+}
+
+/**
+ * The server rejects a send with 402 + `{ code: "insufficient_credits" }` when
+ * the user is out of credits. We surface that as a toast (with the /upgrade
+ * hint) rather than the raw inline error block.
+ */
+function isInsufficientCreditsError(error: Error | undefined): boolean {
+  if (!error) return false;
+  if (error.message.includes("insufficient_credits")) return true;
+  try {
+    return JSON.parse(error.message)?.code === "insufficient_credits";
+  } catch {
+    return false;
+  }
 }
 
 export function Chat() {
@@ -174,6 +190,18 @@ function ChatSession({ sessionId, initialMessages, initialModeMap, initialModelM
     void sendMessage({ text: initialInput });
   }, [initialInput, sendMessage]);
 
+  // Out of credits: toast the user (and point them at /upgrade) instead of
+  // rendering the raw 402 body in the transcript. Keyed on the error object so a
+  // repeat 402 on a later send re-toasts.
+  const outOfCredits = isInsufficientCreditsError(error);
+  useEffect(() => {
+    if (error && isInsufficientCreditsError(error)) {
+      toast.error("Out of credits", {
+        description: "You're out of credits. Run /upgrade to buy more.",
+      });
+    }
+  }, [error]);
+
   const isBusy = status === "submitted" || status === "streaming";
 
   // Show an "Interrupted by user" notice after Esc aborts a response. Cleared
@@ -227,7 +255,7 @@ function ChatSession({ sessionId, initialMessages, initialModeMap, initialModelM
           <text fg={theme.textMuted}>⊘ Interrupted by user</text>
         </LeftBorderBlock>
       )}
-      {error && <ChatError error={error} />}
+      {error && !outOfCredits && <ChatError error={error} />}
     </scrollbox>
   );
 }

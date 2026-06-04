@@ -14,6 +14,7 @@ export {
   ingestUsageInputSchema,
   ingestUsageResultSchema,
   USAGE_EVENT_NAME,
+  CREDITS_METADATA_KEY,
   type IngestUsageInput,
   type IngestUsageResult,
 } from "./ingestion";

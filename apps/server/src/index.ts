@@ -1,8 +1,12 @@
 import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { sessionsRoute } from "./routes/sessions";
+import { paymentsRoute } from "./routes/payments";
 
-const routes = new Hono().use(logger()).route("/sessions", sessionsRoute);
+const routes = new Hono()
+  .use(logger())
+  .route("/sessions", sessionsRoute)
+  .route("/payments", paymentsRoute);
 
 export type AppType = typeof routes;
 

@@ -1,5 +1,6 @@
 import type { NavigateFunction } from "react-router";
 import { login, logout, whoami } from "./auth";
+import { upgrade } from "./payments";
 
 export interface CommandContext {
   navigate: NavigateFunction;
@@ -7,6 +8,7 @@ export interface CommandContext {
   openSessions: () => void;
   openThemes: () => void;
   openModels: () => void;
+  openBalance: () => void;
 }
 
 export interface Command {
@@ -56,6 +58,18 @@ export const commands: Command[] = [
     run: () => {
       void whoami();
     },
+  },
+  {
+    name: "upgrade",
+    description: "Buy more credits",
+    run: () => {
+      void upgrade();
+    },
+  },
+  {
+    name: "balance",
+    description: "Show remaining credits",
+    run: ({ openBalance }) => openBalance(),
   },
   {
     name: "exit",

@@ -5,6 +5,8 @@ import { postMessageRequestSchema, type UIMessage } from "@lightcode/ai/messages
 import { generateSessionTitle } from "@lightcode/ai/title";
 import { prisma } from "../db";
 import { clerkAuth, type AuthEnv } from "../middleware/auth";
+import { requireCredits } from "../middleware/credits";
+import { tryGetPayments } from "../payments";
 import { MessageRole, type Prisma } from "../../generated/client";
 
 function roleOf(role: string): MessageRole {
@@ -108,7 +110,7 @@ export const sessionsRoute = new Hono<AuthEnv>()
     }));
     return c.json({ messages });
   })
-  .post("/:id/messages", async (c) => {
+  .post("/:id/messages", requireCredits, async (c) => {
     const id = c.req.param("id");
     const session = await prisma.session.findFirst({
       where: { id, userId: c.get("userId") },
@@ -129,6 +131,16 @@ export const sessionsRoute = new Hono<AuthEnv>()
     const model = parsed.data.model;
 
     await persistMessage({ sessionId: id, message: incoming, mode });
+
+    // Deduct one credit for this message (1 message = 1 credit). Fire-and-forget
+    // and best-effort: a metering hiccup must never fail the chat turn — the
+    // credit gate (requireCredits) is what enforces the limit on the next send.
+    void tryGetPayments()
+      ?.ingestUsage({
+        externalCustomerId: c.get("userId"),
+        metadata: { mode, ...(model ? { model } : {}) },
+      })
+      .catch((err) => console.error("usage ingest failed", err));
 
     // First message of an untitled session: generate a short title in the
     // background. Fire-and-forget so it never blocks or breaks the chat turn —

@@ -8,6 +8,7 @@ import { useDialog } from "../components/dialog-context";
 import { SessionsDialog } from "../components/sessions-dialog";
 import { ThemesDialog } from "../components/themes-dialog";
 import { ModelsDialog } from "../components/models-dialog";
+import { BalanceDialog } from "../components/balance-dialog";
 import { Toaster } from "../components/toaster";
 import { client } from "../lib/client";
 import { getValidAccessToken } from "../lib/auth";
@@ -89,6 +90,7 @@ export function RootLayout() {
         ),
       openThemes: () => openDialog(<ThemesDialog />),
       openModels: () => openDialog(<ModelsDialog />),
+      openBalance: () => openDialog(<BalanceDialog />),
     });
   };
 
