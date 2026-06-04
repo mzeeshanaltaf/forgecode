@@ -1,8 +1,8 @@
 import { TextAttributes } from "@opentui/core";
 import type { ReactNode } from "react";
-import type { CodingAgentUIMessage } from "@lightcode/ai";
-import { modes, type ModeName } from "@lightcode/ai/modes";
-import { MODELS } from "@lightcode/ai/registry";
+import type { CodingAgentUIMessage } from "@forgecode/ai";
+import { modes, type ModeName } from "@forgecode/ai/modes";
+import { MODELS } from "@forgecode/ai/registry";
 import { useTheme } from "../lib/theme";
 
 const MODEL_LABELS = new Map<string, string>(MODELS.map((m) => [m.id, m.label]));

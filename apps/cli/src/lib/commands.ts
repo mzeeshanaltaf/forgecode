@@ -73,7 +73,7 @@ export const commands: Command[] = [
   },
   {
     name: "exit",
-    description: "Close Lightcode",
+    description: "Close ForgeCode",
     run: ({ exit }) => exit(),
   },
 ];

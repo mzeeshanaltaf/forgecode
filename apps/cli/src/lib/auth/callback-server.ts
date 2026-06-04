@@ -29,10 +29,10 @@ export interface CallbackOptions {
   timeoutMs?: number;
 }
 
-const SUCCESS_HTML = `<!doctype html><meta charset="utf-8"><title>Lightcode</title>
+const SUCCESS_HTML = `<!doctype html><meta charset="utf-8"><title>ForgeCode</title>
 <body style="font-family:system-ui;background:#0d1117;color:#c9d1d9;display:flex;height:100vh;margin:0;align-items:center;justify-content:center">
 <div style="text-align:center"><h1 style="font-weight:600">You're signed in</h1>
-<p style="color:#8b949e">You can close this tab and return to Lightcode.</p></div>`;
+<p style="color:#8b949e">You can close this tab and return to ForgeCode.</p></div>`;
 
 export function waitForCallback(options: CallbackOptions = {}): CallbackHandle {
   const port = options.port ?? DEFAULT_CALLBACK_PORT;

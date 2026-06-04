@@ -1,8 +1,8 @@
 import { TextAttributes, type TextareaRenderable } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";
 import { useEffect, useRef, useState } from "react";
-import { modes } from "@lightcode/ai/modes";
-import { getModel, PROVIDER_LABELS } from "@lightcode/ai/registry";
+import { modes } from "@forgecode/ai/modes";
+import { getModel, PROVIDER_LABELS } from "@forgecode/ai/registry";
 import { useModeContext } from "../lib/mode-context";
 import { useModelContext } from "../lib/model-context";
 import { useTheme } from "../lib/theme";

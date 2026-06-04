@@ -1,4 +1,4 @@
-import { MODELS, PROVIDER_LABELS } from "@lightcode/ai/registry";
+import { MODELS, PROVIDER_LABELS } from "@forgecode/ai/registry";
 import { useModelContext } from "../lib/model-context";
 import { useDialog } from "./dialog-context";
 import { SelectDialog, type SelectDialogOption } from "./select-dialog";

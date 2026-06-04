@@ -1,8 +1,8 @@
 import { Hono } from "hono";
-import { runCodingTurn } from "@lightcode/ai/agent";
-import { extractToolRows, type StoredPart } from "@lightcode/ai/parts";
-import { postMessageRequestSchema, type UIMessage } from "@lightcode/ai/messages";
-import { generateSessionTitle } from "@lightcode/ai/title";
+import { runCodingTurn } from "@forgecode/ai/agent";
+import { extractToolRows, type StoredPart } from "@forgecode/ai/parts";
+import { postMessageRequestSchema, type UIMessage } from "@forgecode/ai/messages";
+import { generateSessionTitle } from "@forgecode/ai/title";
 import { prisma } from "../db";
 import { clerkAuth, type AuthEnv } from "../middleware/auth";
 import { requireCredits } from "../middleware/credits";

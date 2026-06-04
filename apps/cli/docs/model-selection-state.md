@@ -30,7 +30,7 @@ Naming avoids the registry's own `getModel(id)` helper:
 
 ```tsx
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
-import { DEFAULT_MODEL_ID } from "@lightcode/ai/registry";
+import { DEFAULT_MODEL_ID } from "@forgecode/ai/registry";
 
 interface ModelContextValue {
   modelId: string;
@@ -84,7 +84,7 @@ preview, so commit only on select (no `onHighlight`). Build options from `MODELS
 as the hint and marking the current one "active":
 
 ```tsx
-import { MODELS, getModel } from "@lightcode/ai/registry";
+import { MODELS, getModel } from "@forgecode/ai/registry";
 import { useModelContext } from "../lib/model-context";
 import { useDialog } from "./dialog-context";
 import { SelectDialog, type SelectDialogOption } from "./select-dialog";
@@ -126,7 +126,7 @@ export function ModelsDialog() {
 ### 6. Status bar reflects the selection — [chat-textarea.tsx](../src/components/chat-textarea.tsx#L267-L274)
 
 Replace the hardcoded `DEFAULT_MODEL` footer with the live selection. Swap the
-`import { DEFAULT_MODEL } from "@lightcode/ai/registry"` for `getModel`, read `modelId` from
+`import { DEFAULT_MODEL } from "@forgecode/ai/registry"` for `getModel`, read `modelId` from
 `useModelContext()`, and render `const model = getModel(modelId);` in place of `DEFAULT_MODEL`:
 
 ```tsx

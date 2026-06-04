@@ -1,13 +1,13 @@
-import type { CodingAgentUIMessage } from "@lightcode/ai";
+import type { CodingAgentUIMessage } from "@forgecode/ai";
 import {
   chatLocationStateSchema,
   sessionMessagesResponseSchema,
-} from "@lightcode/ai/messages";
+} from "@forgecode/ai/messages";
 import {
   createChatTransport,
   executeClientTool,
   lastAssistantMessageIsCompleteWithToolCalls,
-} from "@lightcode/ai/client";
+} from "@forgecode/ai/client";
 import { useChat } from "@ai-sdk/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";

@@ -1,4 +1,4 @@
-import { createPaymentsClient, type PaymentsClient } from "@lightcode/payments";
+import { createPaymentsClient, type PaymentsClient } from "@forgecode/payments";
 
 /**
  * Lazily-built, process-wide payments client. Polar config is fixed at boot, so

@@ -5,7 +5,7 @@ import { getPayments } from "../payments";
 /**
  * Billing endpoints. The authenticated Clerk user id (`c.get("userId")`) is
  * used directly as Polar's `externalCustomerId`. Responses pass through the
- * `@lightcode/payments` result shapes verbatim so the RPC client infers them.
+ * `@forgecode/payments` result shapes verbatim so the RPC client infers them.
  */
 export const paymentsRoute = new Hono<AuthEnv>()
   .use(clerkAuth)

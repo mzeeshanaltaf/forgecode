@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "lightcode",
+      "name": "forgecode",
       "devDependencies": {
         "@types/bun": "latest",
         "@types/react": "^19.2.14",
@@ -15,8 +15,8 @@
       "name": "cli",
       "dependencies": {
         "@ai-sdk/react": "^3.0.184",
-        "@lightcode/ai": "workspace:*",
-        "@lightcode/shared": "workspace:*",
+        "@forgecode/ai": "workspace:*",
+        "@forgecode/shared": "workspace:*",
         "@opentui/core": "^0.2.1",
         "@opentui/react": "^0.2.1",
         "date-fns": "^4.3.0",
@@ -38,9 +38,9 @@
       "version": "0.0.1",
       "dependencies": {
         "@clerk/backend": "^3.4.14",
-        "@lightcode/ai": "workspace:*",
-        "@lightcode/payments": "workspace:*",
-        "@lightcode/shared": "workspace:*",
+        "@forgecode/ai": "workspace:*",
+        "@forgecode/payments": "workspace:*",
+        "@forgecode/shared": "workspace:*",
         "@prisma/adapter-pg": "^7.8.0",
         "@prisma/client": "^7.8.0",
         "hono": "^4.6.0",
@@ -52,7 +52,7 @@
       },
     },
     "packages/ai": {
-      "name": "@lightcode/ai",
+      "name": "@forgecode/ai",
       "version": "0.0.1",
       "dependencies": {
         "@ai-sdk/anthropic": "^3.0.81",
@@ -63,7 +63,7 @@
       },
     },
     "packages/payments": {
-      "name": "@lightcode/payments",
+      "name": "@forgecode/payments",
       "version": "0.0.1",
       "dependencies": {
         "@polar-sh/sdk": "^0.47.1",
@@ -71,7 +71,7 @@
       },
     },
     "packages/shared": {
-      "name": "@lightcode/shared",
+      "name": "@forgecode/shared",
       "version": "0.0.1",
       "dependencies": {
         "zod": "^4.4.3",
@@ -103,15 +103,15 @@
 
     "@electric-sql/pglite-tools": ["@electric-sql/pglite-tools@0.3.1", "", { "peerDependencies": { "@electric-sql/pglite": "0.4.1" } }, "sha512-C+T3oivmy9bpQvSxVqXA1UDY8cB9Eb9vZHL9zxWwEUfDixbXv4G3r2LjoTdR33LD8aomR3O9ZXEO3XEwr/cUCA=="],
 
+    "@forgecode/ai": ["@forgecode/ai@workspace:packages/ai"],
+
+    "@forgecode/payments": ["@forgecode/payments@workspace:packages/payments"],
+
+    "@forgecode/shared": ["@forgecode/shared@workspace:packages/shared"],
+
     "@hono/node-server": ["@hono/node-server@1.19.11", "", { "peerDependencies": { "hono": "^4" } }, "sha512-dr8/3zEaB+p0D2n/IUrlPF1HZm586qgJNXK1a9fhg/PzdtkK7Ksd5l312tJX2yBuALqDYBlG20QEbayqPyxn+g=="],
 
     "@kurkle/color": ["@kurkle/color@0.3.4", "", {}, "sha512-M5UknZPHRu3DEDWoipU6sE8PdkZ6Z/S+v4dD+Ke8IaNlpdSQah50lz1KtcFBa2vsdOnwbbnxJwVM4wty6udA5w=="],
-
-    "@lightcode/ai": ["@lightcode/ai@workspace:packages/ai"],
-
-    "@lightcode/payments": ["@lightcode/payments@workspace:packages/payments"],
-
-    "@lightcode/shared": ["@lightcode/shared@workspace:packages/shared"],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.1", "", {}, "sha512-gLyJlPHPZYdAk1JENA9LeHejZe1Ti77/pTeFm/nMXmQH/HFZlcS/O2XJB+L8fkbrNSqhdtlvjBVjxwUYanNH5Q=="],
 

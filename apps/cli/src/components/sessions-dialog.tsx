@@ -1,4 +1,4 @@
-import { sessionListResponseSchema } from "@lightcode/ai/messages";
+import { sessionListResponseSchema } from "@forgecode/ai/messages";
 import { formatDistanceToNow } from "date-fns";
 import { useEffect, useState } from "react";
 import { client } from "../lib/client";

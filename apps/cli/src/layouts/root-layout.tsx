@@ -1,6 +1,6 @@
 import { TextAttributes } from "@opentui/core";
 import { useRenderer } from "@opentui/react";
-import { chatLocationStateSchema } from "@lightcode/ai/messages";
+import { chatLocationStateSchema } from "@forgecode/ai/messages";
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { ChatTextarea } from "../components/chat-textarea";
@@ -107,7 +107,7 @@ export function RootLayout() {
         borderColor={theme.border}
         flexShrink={0}
       >
-        <text fg={theme.text} attributes={TextAttributes.BOLD}>Lightcode</text>
+        <text fg={theme.text} attributes={TextAttributes.BOLD}>ForgeCode</text>
         <text fg={theme.text} attributes={TextAttributes.DIM}>
           Current: {location.pathname}
         </text>

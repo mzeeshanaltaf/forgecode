@@ -2,7 +2,7 @@ import { hc } from "hono/client";
 import type { AppType } from "server";
 import { getValidAccessToken } from "./auth";
 
-const baseUrl = process.env.LIGHTCODE_SERVER_URL ?? "http://localhost:3000/";
+const baseUrl = process.env.FORGECODE_SERVER_URL ?? "http://localhost:3000/";
 
 /**
  * Resolved per request: a (auto-refreshed) bearer header when signed in, or no

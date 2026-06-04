@@ -17,7 +17,7 @@ const configSchema = z.object({
 type Config = z.infer<typeof configSchema>;
 
 function configPath(): string {
-  return join(homedir(), ".lightcode", "config.json");
+  return join(homedir(), ".forgecode", "config.json");
 }
 
 export function loadConfig(): Config {

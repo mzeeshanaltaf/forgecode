@@ -1,4 +1,4 @@
-# Plan: Wire `@lightcode/payments` into the server + CLI
+# Plan: Wire `@forgecode/payments` into the server + CLI
 
 ## Context
 
@@ -27,7 +27,7 @@ Mirrors [db.ts](../../server/src/db.ts). Builds the payments client once from `p
 - `tryGetPayments(): PaymentsClient | null` — `null` if unconfigured (used by the gate + ingestion → fail-open).
 
 ```ts
-import { createPaymentsClient, type PaymentsClient } from "@lightcode/payments";
+import { createPaymentsClient, type PaymentsClient } from "@forgecode/payments";
 
 let cached: PaymentsClient | null | undefined;
 
@@ -123,7 +123,7 @@ Add `.route("/payments", paymentsRoute)` to the chained `routes` so `AppType` ca
 
 ### 6. [src/../package.json](../../server/package.json)
 
-Add `"@lightcode/payments": "workspace:*"` to `dependencies`, then `bun install`.
+Add `"@forgecode/payments": "workspace:*"` to `dependencies`, then `bun install`.
 
 ## CLI changes
 
@@ -168,7 +168,7 @@ Add two entries next to `/login` / `/whoami`:
 
 ## Verification
 
-1. `bun install` (repo root) — resolves `@lightcode/payments` into the server.
+1. `bun install` (repo root) — resolves `@forgecode/payments` into the server.
 2. Type-check both apps: `cd apps/server && bunx tsc --noEmit` and `cd apps/cli && bunx tsc --noEmit` — must pass clean (confirms the RPC types flow `/payments` into the CLI).
 3. With real `POLAR_*` + `DATABASE_URL` + Clerk env in `apps/server/.env`, `bun run dev:server` + `bun run dev:cli`, signed in:
    - `/balance` → toast shows current credits (0 for a fresh account).

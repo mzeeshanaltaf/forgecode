@@ -1,4 +1,4 @@
-# Plan: Flat model registry for `@lightcode/ai`
+# Plan: Flat model registry for `@forgecode/ai`
 
 ## Context
 
@@ -7,7 +7,7 @@ The coding agent originally hardwired a single model: a `model.ts` exported
 two places (the `ToolLoopAgent` and the tool-call repair path). There was no notion of "available
 models"; the provider was baked into the agent.
 
-This introduces a **simple flat registry** of available models inside `@lightcode/ai`, covering
+This introduces a **simple flat registry** of available models inside `@forgecode/ai`, covering
 multiple providers, so a later change can let the user pick a model. **Model selection is not wired up
 here** — everything resolves to the default model; this plan only builds the registry and routes the
 existing single-model behavior through it. (Threading the id through requests is covered separately in
@@ -71,10 +71,10 @@ Its constants are replaced by `DEFAULT_MODEL_ID` / `DEFAULT_MODEL` from the regi
 ### 6. Update the two external consumers
 
 - Server [sessions.ts](../../../apps/server/src/routes/sessions.ts): persist `DEFAULT_MODEL_ID` from
-  `@lightcode/ai/registry`. (Later superseded by the per-request `model` in
+  `@forgecode/ai/registry`. (Later superseded by the per-request `model` in
   [wire-model-id.md](./wire-model-id.md).)
 - CLI [chat-textarea.tsx](../src/components/chat-textarea.tsx): display `DEFAULT_MODEL.label` and
-  `DEFAULT_MODEL.provider` from `@lightcode/ai/registry`.
+  `DEFAULT_MODEL.provider` from `@forgecode/ai/registry`.
 
 ## Verification
 

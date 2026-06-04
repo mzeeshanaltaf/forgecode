@@ -59,7 +59,7 @@ export const introspectionResultSchema = z
   .passthrough();
 export type IntrospectionResult = z.infer<typeof introspectionResultSchema>;
 
-/** What we persist to `~/.lightcode/auth.json`. */
+/** What we persist to `~/.forgecode/auth.json`. */
 export const sessionSchema = z.object({
   accessToken: z.string(),
   refreshToken: z.string().optional(),

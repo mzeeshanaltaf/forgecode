@@ -5,12 +5,12 @@ import { sessionSchema, type Session } from "./schemas";
 
 /**
  * Persisted auth session. Mirrors the theme `config.ts` pattern (same
- * `~/.lightcode/` dir, best-effort writes that never crash the TUI, zod-
+ * `~/.forgecode/` dir, best-effort writes that never crash the TUI, zod-
  * validated reads) but lives in its own `auth.json` and is written with
  * owner-only `0o600` permissions since it holds bearer tokens.
  */
 function sessionPath(): string {
-  return join(homedir(), ".lightcode", "auth.json");
+  return join(homedir(), ".forgecode", "auth.json");
 }
 
 export function loadSession(): Session | null {

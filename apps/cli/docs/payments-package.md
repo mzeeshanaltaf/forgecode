@@ -1,8 +1,8 @@
-# Plan: `@lightcode/payments` — Polar usage-based billing package
+# Plan: `@forgecode/payments` — Polar usage-based billing package
 
 ## Context
 
-We want to monetize Lightcode with **usage-based billing on Polar**. The model is simple:
+We want to monetize ForgeCode with **usage-based billing on Polar**. The model is simple:
 
 - A user buys a **one-time product for $19.99** and is granted **1000 credit units**.
 - Granting credits is handled by Polar itself: the product is configured with a **"meter credit" benefit** tied to a meter, so paying for the product automatically credits the customer's meter balance — our code does **not** grant credits manually.
@@ -15,7 +15,7 @@ The Polar IDs are already plumbed into [apps/server/.env.example](../../server/.
 
 ## Decisions
 
-- **Package name:** `@lightcode/payments`
+- **Package name:** `@forgecode/payments`
 - **Config style:** factory + config object — `createPaymentsClient(config)`. The package is pure: it never reads `process.env`. The caller passes config; the package validates it with zod and constructs the Polar client.
 - **Webhooks:** out of scope.
 - **Deduction model:** **flat 1 credit per message.** 1000 credits = 1000 messages.
@@ -39,7 +39,7 @@ The Polar IDs are already plumbed into [apps/server/.env.example](../../server/.
 
 Mirrors [packages/ai](../../../packages/ai/) and [packages/shared](../../../packages/shared/):
 
-- `package.json`: `"name": "@lightcode/payments"`, `"version": "0.0.1"`, `"private": true`, `"type": "module"`, `"main": "src/index.ts"`, an `exports` map, no `scripts`.
+- `package.json`: `"name": "@forgecode/payments"`, `"version": "0.0.1"`, `"private": true`, `"type": "module"`, `"main": "src/index.ts"`, an `exports` map, no `scripts`.
 - `tsconfig.json`: just `{ "extends": "../../tsconfig.base.json", "include": ["src/**/*.ts"] }`.
 - **All boundary data validated with zod** (`z.infer` for types, `parse`/`safeParse` at the edges), schemas co-located with their module — same as `packages/ai/src/tools/*/schema.ts`.
 - Auto-registers via root `"workspaces": ["packages/*"]` — no root edits needed.
@@ -48,7 +48,7 @@ Mirrors [packages/ai](../../../packages/ai/) and [packages/shared](../../../pack
 
 ```
 packages/payments/
-├── package.json          # @lightcode/payments, deps: @polar-sh/sdk, zod
+├── package.json          # @forgecode/payments, deps: @polar-sh/sdk, zod
 ├── tsconfig.json         # extends ../../tsconfig.base.json
 └── src/
     ├── index.ts          # public API barrel

@@ -1,5 +1,5 @@
 import { RGBA } from "@opentui/core";
-import type { ModeName } from "@lightcode/ai/modes";
+import type { ModeName } from "@forgecode/ai/modes";
 
 export interface Theme {
   name: string;

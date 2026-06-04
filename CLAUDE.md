@@ -61,7 +61,7 @@ useCompletion({
 
 Use **zod schemas** for all runtime validation across both `apps/cli` and `apps/server` — never `as` casts or hand-rolled type guards for data crossing a boundary (router state, HTTP requests/responses, env vars, file I/O, IPC). Define the schema once, derive the TypeScript type with `z.infer`, and `parse`/`safeParse` at the boundary.
 
-Shared schemas live in `packages/shared/src/schemas/` and are re-exported from `@lightcode/shared` so the CLI and server agree on shape. App-local schemas (only one side consumes them) may live next to their consumer, but still go through zod.
+Shared schemas live in `packages/shared/src/schemas/` and are re-exported from `@forgecode/shared` so the CLI and server agree on shape. App-local schemas (only one side consumes them) may live next to their consumer, but still go through zod.
 
 ```ts
 // packages/shared/src/schemas/chat.ts

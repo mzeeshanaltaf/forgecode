@@ -2,7 +2,7 @@
 
 ## Context
 
-The model registry now lives in `@lightcode/ai` ([registry.ts](../../../packages/ai/src/registry.ts)) with
+The model registry now lives in `@forgecode/ai` ([registry.ts](../../../packages/ai/src/registry.ts)) with
 `MODELS`, `modelIdSchema`, and `DEFAULT_MODEL_ID`, and per-model provider options resolved by
 [provider.ts](../../../packages/ai/src/provider.ts). But nothing carries a model id through a request: the
 server's `codingAgent` is constructed once with `DEFAULT_MODEL_ID` and ignores any per-request model,
@@ -52,7 +52,7 @@ model: modelIdSchema.default(DEFAULT_MODEL_ID),
 - `createChatTransport`: add `model: string` to `CreateChatTransportParams` and include it in the
   `prepareSendMessagesRequest` body next to `cwd`/`mode`. (A plain value, not a getter like `getMode`,
   since there is no model state to track yet.)
-- `chat.tsx`: import `DEFAULT_MODEL_ID` from `@lightcode/ai/registry` and pass `model: DEFAULT_MODEL_ID`
+- `chat.tsx`: import `DEFAULT_MODEL_ID` from `@forgecode/ai/registry` and pass `model: DEFAULT_MODEL_ID`
   into the `createChatTransport({ ... })` call. The status-bar display in
   [chat-textarea.tsx](../src/components/chat-textarea.tsx) already shows `DEFAULT_MODEL` and
   needs no change.

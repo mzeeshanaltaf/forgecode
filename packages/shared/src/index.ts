@@ -1,1 +1,1 @@
-export const APP_NAME = "lightcode";
+export const APP_NAME = "forgecode";

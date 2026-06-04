@@ -1,16 +1,16 @@
-# Lightcode
+# ForgeCode
 
 A monorepo built with Bun workspaces, featuring a Hono API server with Prisma/Postgres persistence and an OpenTUI terminal interface.
 
 ## Structure
 
 ```
-lightcode/
+forgecode/
 ├── apps/
 │   ├── server/   # Hono HTTP server (Bun native) + Prisma
 │   └── cli/      # OpenTUI chat interface (React reconciler)
 ├── packages/
-│   └── shared/   # Shared zod schemas (@lightcode/shared)
+│   └── shared/   # Shared zod schemas (@forgecode/shared)
 ├── tsconfig.base.json
 └── package.json
 ```

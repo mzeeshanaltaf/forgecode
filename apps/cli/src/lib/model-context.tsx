@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { DEFAULT_MODEL_ID } from "@lightcode/ai/registry";
+import { DEFAULT_MODEL_ID } from "@forgecode/ai/registry";
 
 interface ModelContextValue {
   modelId: string;

@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { DEFAULT_MODE, nextMode, prevMode, type ModeName } from "@lightcode/ai/modes";
+import { DEFAULT_MODE, nextMode, prevMode, type ModeName } from "@forgecode/ai/modes";
 
 interface ModeContextValue {
   mode: ModeName;
