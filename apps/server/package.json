@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@clerk/backend": "^3.4.14",
+    "@hono/node-server": "^1.19.11",
     "@forgecode/ai": "workspace:*",
     "@forgecode/payments": "workspace:*",
     "@forgecode/shared": "workspace:*",

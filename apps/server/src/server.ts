@@ -1,3 +1,4 @@
+import { handle } from "@hono/node-server/vercel";
 import { app } from "./app";
 
 // Bundle entry for the Vercel serverless function. Bun bundles this (and the
@@ -10,7 +11,10 @@ import { app } from "./app";
 // load from node_modules at runtime, so Vercel's file tracer ships them — and
 // the Prisma runtime's assets — alongside the function.
 //
-// The Node runtime accepts a Web-standard handler, which is exactly Hono's
-// `app.fetch`. `vercel.json` rewrites every path here, so Hono still sees the
-// original `/sessions/*` and `/payments/*` paths.
-export default (request: Request): Response | Promise<Response> => app.fetch(request);
+// `handle` adapts Hono to Vercel's Node `(req, res)` signature: it builds a Web
+// Request from the IncomingMessage, runs `app.fetch`, and writes the Response
+// (including streamed bodies) back to `res`. Exporting `app.fetch` directly does
+// NOT work — Vercel calls the function as `(req, res)`, so a returned Response is
+// ignored and the request hangs forever with no error. `vercel.json` rewrites
+// every path here, so Hono still sees the original `/sessions/*` paths.
+export default handle(app);
