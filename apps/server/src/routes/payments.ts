@@ -39,7 +39,9 @@ export const paymentsRoute = new Hono<AuthEnv>()
       });
       const body = await probe.text();
       console.log(
-        "[polar-probe] raw fetch status:",
+        "[polar-probe] node:",
+        process.version,
+        "| raw fetch status:",
         probe.status,
         "| sent-auth-len:",
         `Bearer ${token}`.length,
