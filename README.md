@@ -228,7 +228,7 @@ To deploy on Vercel as a monorepo project:
 
 1. **Root Directory** → `apps/server`. **Framework Preset** → **Other**. Leave the Install Command at its default so Vercel installs from the monorepo root (the `workspace:*` deps and `bun.lock` resolve there).
 2. **Environment Variables** → add every variable from [Configuration](#configuration) (`DATABASE_URL`, a provider API key, the `CLERK_*` vars, and any `POLAR_*` vars). The server reads `DATABASE_URL` at module load and throws without it, which surfaces on Vercel as `FUNCTION_INVOCATION_FAILED`.
-3. **Deploy.** `vercel.json` runs `prisma generate` as the build command; the Prisma client is also regenerated on install via the `postinstall` script, so the generated client is never committed.
+3. **Deploy.** The Prisma client is regenerated during install via the server's `postinstall` script, so the generated client is never committed and no build command is needed. `vercel.json` only declares the rewrite, so there's no static build step (and no `public/` output directory to configure).
 
 The Node.js runtime (Vercel's default) is required — the routes use Prisma + `pg`, which can't run on the Edge runtime.
 
