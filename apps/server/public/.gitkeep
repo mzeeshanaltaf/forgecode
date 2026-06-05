@@ -1,0 +1,4 @@
+# Intentionally empty. Vercel requires an output directory to exist after a
+# build; this API-only project has no static assets. The vercel.json rewrite
+# routes every request to the api/index function, so nothing is served from
+# here — it exists only to satisfy Vercel's output-directory check.
