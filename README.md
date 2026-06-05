@@ -10,6 +10,7 @@ It's built as a [Bun](https://bun.sh) workspace monorepo: a Hono API server (wit
 
 ## Table of contents
 
+- [Install](#install)
 - [Features](#features)
 - [How it works](#how-it-works)
 - [Requirements](#requirements)
@@ -23,6 +24,38 @@ It's built as a [Bun](https://bun.sh) workspace monorepo: a Hono API server (wit
 - [HTTP API](#http-api)
 - [Database](#database)
 - [Tech stack](#tech-stack)
+
+---
+
+## Install
+
+> **Just want to use ForgeCode against a hosted server?** This is all you need — **no Bun, no Node, no clone.** The installer downloads a self-contained binary (the Bun runtime is embedded) and points it at the deployed server. To run the whole stack yourself instead, see [Quick start](#quick-start).
+
+**macOS / Linux:**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/mzeeshanaltaf/forgecode/main/scripts/install.sh | sh
+```
+
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/mzeeshanaltaf/forgecode/main/scripts/install.ps1 | iex
+```
+
+The installer grabs the latest release binary, puts `forgecode` on your `PATH`, and seeds `~/.forgecode/.env` with the public server/auth config (it won't overwrite an existing one). Open a **new** terminal, then:
+
+```sh
+forgecode      # launch the TUI
+```
+
+Run `/login` inside the app to sign in with your browser.
+
+Notes:
+
+- Prebuilt binaries come from the [latest GitHub Release](https://github.com/mzeeshanaltaf/forgecode/releases/latest), produced for macOS (arm64/x64), Linux (x64/arm64), and Windows (x64) by the [`release` workflow](.github/workflows/release.yml) on every `v*` tag.
+- Distributed builds intentionally omit the Clerk client secret — everything works, but `/whoami` token introspection is unavailable.
+- Want to build the binary yourself? See [Building](#building).
 
 ---
 
@@ -210,7 +243,7 @@ bun run build
 bun --filter server build
 ```
 
-The **server** bundles to `apps/server/dist` (`bun build src/index.ts --target bun --outdir dist`). The **CLI** is run directly with Bun rather than pre-bundled — distribute it via `bun link` (above) or by invoking its entry file.
+The **server** bundles to `apps/server/dist` (`bun build src/index.ts --target bun --outdir dist`). The **CLI** compiles to a self-contained executable (`bun --filter cli build` → `apps/cli/dist/forgecode`, which embeds the Bun runtime) via `bun build … --compile`. For local dev, run it directly with Bun or via [`bun link`](#installing-the-cli-globally-bun-link); to ship it to other machines, the [`release` workflow](.github/workflows/release.yml) cross-builds one binary per platform on a `v*` tag and attaches them to a GitHub Release for the [`Install`](#install) one-liners to download.
 
 Type-check a single workspace (the repo uses per-package checking, not `tsc -b` from the root):
 
