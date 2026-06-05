@@ -14,6 +14,23 @@ let cached: PaymentsClient | null | undefined;
  * silently on `null`.
  */
 export function tryGetPayments(): PaymentsClient | null {
+  // TEMP DIAGNOSTIC (remove once the Polar 401 is resolved): logs the shape of
+  // the token actually present in the runtime env — its length and quoted
+  // first/last chars reveal hidden whitespace, newlines, or wrapping quotes that
+  // produce a malformed `Authorization` header. Runs every call (not gated by
+  // the memo) so it always appears for the request being debugged.
+  const rawToken = process.env.POLAR_ACCESS_TOKEN;
+  console.log(
+    "[polar-debug] token length:",
+    rawToken?.length,
+    "| head:",
+    JSON.stringify(rawToken?.slice(0, 12)),
+    "| tail:",
+    JSON.stringify(rawToken?.slice(-4)),
+    "| server:",
+    JSON.stringify(process.env.POLAR_SERVER),
+  );
+
   if (cached !== undefined) return cached;
   try {
     cached = createPaymentsClient({
