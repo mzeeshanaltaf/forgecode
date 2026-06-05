@@ -28,6 +28,20 @@ Run `/login` inside the app to sign in.
 
 > **Note:** distributed builds omit the Clerk OAuth client secret, so `/login` and normal usage work fully, but `/whoami` token introspection is unavailable.
 
+### Uninstall
+
+```sh
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/mzeeshanaltaf/forgecode/main/scripts/uninstall.sh | sh
+```
+
+```powershell
+# Windows
+irm https://raw.githubusercontent.com/mzeeshanaltaf/forgecode/main/scripts/uninstall.ps1 | iex
+```
+
+Removes the binary but keeps `~/.forgecode/` (login, config, theme). Add `--purge` (`… | sh -s -- --purge`) or `-Purge` on Windows to delete that too.
+
 ## Development
 
 ```bash

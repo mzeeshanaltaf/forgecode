@@ -57,6 +57,22 @@ Notes:
 - Distributed builds intentionally omit the Clerk client secret — everything works, but `/whoami` token introspection is unavailable.
 - Want to build the binary yourself? See [Building](#building).
 
+### Uninstall
+
+**macOS / Linux:**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/mzeeshanaltaf/forgecode/main/scripts/uninstall.sh | sh
+```
+
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/mzeeshanaltaf/forgecode/main/scripts/uninstall.ps1 | iex
+```
+
+This removes the `forgecode` binary (and its PATH entry on Windows) but **keeps `~/.forgecode/`** — your saved login, config, and theme — so a reinstall stays signed in. To wipe that too, add `--purge` on macOS/Linux (`… | sh -s -- --purge`) or run the Windows script with `-Purge`.
+
 ---
 
 ## Features
