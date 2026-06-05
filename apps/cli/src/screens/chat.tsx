@@ -50,14 +50,29 @@ function isInsufficientCreditsError(error: Error | undefined): boolean {
 export function Chat() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
-  const [history, setHistory] = useState<CodingAgentUIMessage[] | null>(null);
+  // A session reached with chat location state was just created via POST
+  // /sessions one tick earlier (see root-layout's handleSubmit) — it has no
+  // stored messages yet. Seeding an empty history lets us render immediately and
+  // skip the message-history fetch and its "Loading session…" flash. Sessions
+  // opened from the picker arrive without this state and still fetch.
+  const isNewSession = chatLocationStateSchema.safeParse(location.state).success;
+  const [history, setHistory] = useState<CodingAgentUIMessage[] | null>(
+    isNewSession ? [] : null,
+  );
   const [initialModeMap, setInitialModeMap] = useState<Map<string, string>>(new Map());
   const [initialModelMap, setInitialModelMap] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
     if (!id) {
       navigate("/", { replace: true });
+      return;
+    }
+    if (isNewSession) {
+      setHistory([]);
+      setInitialModeMap(new Map());
+      setInitialModelMap(new Map());
       return;
     }
     let cancelled = false;
@@ -92,7 +107,7 @@ export function Chat() {
     return () => {
       cancelled = true;
     };
-  }, [id, navigate]);
+  }, [id, navigate, isNewSession]);
 
   if (!id || history === null) {
     return (
