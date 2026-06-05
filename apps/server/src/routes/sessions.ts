@@ -112,6 +112,7 @@ export const sessionsRoute = new Hono<AuthEnv>()
   })
   .post("/:id/messages", requireCredits, async (c) => {
     const id = c.req.param("id");
+    console.log("[msg] enter, looking up session", id);
     const session = await prisma.session.findFirst({
       where: { id, userId: c.get("userId") },
     });
@@ -119,7 +120,9 @@ export const sessionsRoute = new Hono<AuthEnv>()
       return c.json({ error: "session not found" }, 404);
     }
 
+    console.log("[msg] session found, reading request body");
     const body = await c.req.json().catch(() => null);
+    console.log("[msg] body read, parsing");
     const parsed = postMessageRequestSchema.safeParse(body);
     if (!parsed.success) {
       return c.json({ error: "invalid request", issues: parsed.error.issues }, 400);
@@ -130,7 +133,9 @@ export const sessionsRoute = new Hono<AuthEnv>()
     const mode = parsed.data.mode;
     const model = parsed.data.model;
 
+    console.log("[msg] persisting incoming message");
     await persistMessage({ sessionId: id, message: incoming, mode });
+    console.log("[msg] persisted, fetching history");
 
     // Deduct one credit for this message (1 message = 1 credit). Fire-and-forget
     // and best-effort: a metering hiccup must never fail the chat turn — the
@@ -168,6 +173,7 @@ export const sessionsRoute = new Hono<AuthEnv>()
       parts: row.parts as unknown as UIMessage["parts"],
     }));
 
+    console.log("[msg] history fetched, calling runCodingTurn", { count: history.length });
     return runCodingTurn({
       history,
       cwd,
