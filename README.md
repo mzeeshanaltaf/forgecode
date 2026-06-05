@@ -18,6 +18,7 @@ It's built as a [Bun](https://bun.sh) workspace monorepo: a Hono API server (wit
 - [Running locally](#running-locally)
 - [Installing the CLI globally (`bun link`)](#installing-the-cli-globally-bun-link)
 - [Building](#building)
+- [Deploying the server (Vercel)](#deploying-the-server-vercel)
 - [Workspaces](#workspaces)
 - [HTTP API](#http-api)
 - [Database](#database)
@@ -219,6 +220,28 @@ cd apps/cli && bunx tsc --noEmit
 
 ---
 
+## Deploying the server (Vercel)
+
+The server runs locally as a Bun process (`export default { port, fetch }`), but Vercel doesn't run Bun for serverless functions — it invokes a **Node.js function**. To bridge the two, the same Hono app ([`apps/server/src/app.ts`](apps/server/src/app.ts)) is also exposed through a Vercel function at [`apps/server/api/index.ts`](apps/server/api/index.ts), and [`apps/server/vercel.json`](apps/server/vercel.json) rewrites every request to it. Local dev is unaffected — `bun run dev:server` still uses the Bun entry ([`apps/server/src/index.ts`](apps/server/src/index.ts)).
+
+To deploy on Vercel as a monorepo project:
+
+1. **Root Directory** → `apps/server`. **Framework Preset** → **Other**. Leave the Install Command at its default so Vercel installs from the monorepo root (the `workspace:*` deps and `bun.lock` resolve there).
+2. **Environment Variables** → add every variable from [Configuration](#configuration) (`DATABASE_URL`, a provider API key, the `CLERK_*` vars, and any `POLAR_*` vars). The server reads `DATABASE_URL` at module load and throws without it, which surfaces on Vercel as `FUNCTION_INVOCATION_FAILED`.
+3. **Deploy.** `vercel.json` runs `prisma generate` as the build command; the Prisma client is also regenerated on install via the `postinstall` script, so the generated client is never committed.
+
+The Node.js runtime (Vercel's default) is required — the routes use Prisma + `pg`, which can't run on the Edge runtime.
+
+Then point the CLI at the deployed URL. **`FORGECODE_SERVER_URL` must include the scheme** (`https://`) — a bare host like `forgecode-server.vercel.app` makes the CLI fail with `fetch() URL is invalid`:
+
+```bash
+FORGECODE_SERVER_URL=https://your-server.vercel.app
+```
+
+Use the project's stable production domain, not a hashed preview URL — preview deployments are behind Vercel Authentication by default and will reject the CLI's requests.
+
+---
+
 ## Workspaces
 
 The repo is a Bun workspace monorepo (`workspaces: ["apps/*", "packages/*"]`). Runnable apps live under `apps/`; shared libraries under `packages/`. New workspaces auto-register — no root edits required.
@@ -288,7 +311,7 @@ Database scripts, all runnable from the repo root:
 
 | Script | What it does |
 |---|---|
-| `bun run db:generate` | Regenerate the Prisma client (run after schema edits) |
+| `bun run db:generate` | Regenerate the Prisma client (run after schema edits; also runs automatically on `bun install` via the server's `postinstall`) |
 | `bun run db:push` | Sync `schema.prisma` to the live database (development workflow — no migration files) |
 | `bun run db:studio` | Open Prisma Studio to browse tables |
 

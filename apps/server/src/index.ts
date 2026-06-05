@@ -1,20 +1,17 @@
-import { Hono } from "hono";
-import { logger } from "hono/logger";
-import { sessionsRoute } from "./routes/sessions";
-import { paymentsRoute } from "./routes/payments";
+import { app } from "./app";
 
-const routes = new Hono()
-  .use(logger())
-  .route("/sessions", sessionsRoute)
-  .route("/payments", paymentsRoute);
+// Re-exported so the CLI's RPC client (`import type { AppType } from "server"`)
+// keeps resolving through the package's `main`.
+export type { AppType } from "./app";
 
-export type AppType = typeof routes;
-
+// Bun local-dev entry: Bun's runtime recognises this default-export shape and
+// starts the HTTP server. On Vercel this module isn't the entry point —
+// `api/index.ts` is — so this server never starts there.
 const port = Number(process.env.PORT ?? 3000);
 
 export default {
   port,
-  fetch: routes.fetch,
+  fetch: app.fetch,
 };
 
 console.log(`server listening on http://localhost:${port}`);
