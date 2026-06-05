@@ -33,16 +33,20 @@ export function createPaymentsClient(config: PaymentsConfig | unknown): Payments
   // header (and which other headers) actually leaves the function. A raw fetch
   // with the same token returns 200 from Vercel, yet the SDK 401s — this shows
   // the difference.
+  // The Polar SDK adds a `user-agent: speakeasy-sdk/…` and an empty `cookie`
+  // header to every request. When the request originates from a cloud
+  // provider's IP range (e.g. Vercel/AWS), Cloudflare — which fronts the Polar
+  // API — flags that signature and the `Authorization` header never reaches
+  // Polar's app, which then returns `401 {"error":"Unauthorized"}`. The identical
+  // request from a normal IP (local dev) succeeds, and a bare `fetch` with only
+  // `accept` + `authorization` succeeds from Vercel too. Strip the two
+  // offending headers so the SDK's request matches that minimal, working shape.
   const httpClient = new HTTPClient();
   httpClient.addHook("beforeRequest", (request) => {
-    const headers: Record<string, string> = {};
-    for (const [k, v] of request.headers) {
-      // Redact the bearer token to just its length + public prefix.
-      headers[k] =
-        k === "authorization" ? `<len ${v.length}, ${v.slice(0, 18)}…>` : JSON.stringify(v);
-    }
-    console.log("[polar-hook] ->", request.method, request.url, "| headers:", headers);
-    return request;
+    const headers = new Headers(request.headers);
+    headers.delete("cookie");
+    headers.delete("user-agent");
+    return new Request(request, { headers });
   });
 
   const polar = new Polar({
