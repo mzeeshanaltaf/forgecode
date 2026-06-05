@@ -28,11 +28,6 @@ export type PaymentsClient = {
 export function createPaymentsClient(config: PaymentsConfig | unknown): PaymentsClient {
   const cfg = paymentsConfigSchema.parse(config);
 
-  // TEMP DIAGNOSTIC (remove after the Polar 401 is resolved): log exactly what
-  // the SDK puts on the wire so we can see, on Vercel, whether the Authorization
-  // header (and which other headers) actually leaves the function. A raw fetch
-  // with the same token returns 200 from Vercel, yet the SDK 401s — this shows
-  // the difference.
   // The Polar SDK adds a `user-agent: speakeasy-sdk/…` and an empty `cookie`
   // header to every request. When the request originates from a cloud
   // provider's IP range (e.g. Vercel/AWS), Cloudflare — which fronts the Polar

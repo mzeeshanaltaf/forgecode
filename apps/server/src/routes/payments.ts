@@ -21,37 +21,6 @@ export const paymentsRoute = new Hono<AuthEnv>()
     }
   })
   .get("/balance", async (c) => {
-    // TEMP DIAGNOSTIC (remove after the Polar 401 is resolved): hit the Polar
-    // API directly with an explicit Authorization header, bypassing the SDK, to
-    // tell apart "SDK isn't sending auth when bundled on Vercel" from "the
-    // request from Vercel's network is rejected regardless".
-    try {
-      const token = process.env.POLAR_ACCESS_TOKEN ?? "";
-      const base =
-        process.env.POLAR_SERVER === "production"
-          ? "https://api.polar.sh"
-          : "https://sandbox-api.polar.sh";
-      const url = `${base}/v1/customer-meters/?external_customer_id=${encodeURIComponent(
-        c.get("userId"),
-      )}&meter_id=${encodeURIComponent(process.env.POLAR_CREDITS_METER_ID ?? "")}&limit=1`;
-      const probe = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-      });
-      const body = await probe.text();
-      console.log(
-        "[polar-probe] node:",
-        process.version,
-        "| raw fetch status:",
-        probe.status,
-        "| sent-auth-len:",
-        `Bearer ${token}`.length,
-        "| body:",
-        body.slice(0, 120),
-      );
-    } catch (probeErr) {
-      console.error("[polar-probe] raw fetch threw", probeErr);
-    }
-
     try {
       const balance = await getPayments().getCreditBalance({
         externalCustomerId: c.get("userId"),
