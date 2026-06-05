@@ -11,10 +11,10 @@ import { app } from "./app";
 // load from node_modules at runtime, so Vercel's file tracer ships them — and
 // the Prisma runtime's assets — alongside the function.
 //
-// `handle` adapts Hono to Vercel's Node `(req, res)` signature: it builds a Web
-// Request from the IncomingMessage, runs `app.fetch`, and writes the Response
-// (including streamed bodies) back to `res`. Exporting `app.fetch` directly does
-// NOT work — Vercel calls the function as `(req, res)`, so a returned Response is
-// ignored and the request hangs forever with no error. `vercel.json` rewrites
-// every path here, so Hono still sees the original `/sessions/*` paths.
+// Adapts Hono to Vercel's Node `(req, res)` signature: builds a Web Request from
+// the IncomingMessage, runs `app.fetch`, and writes the Response (including
+// streamed bodies) back to `res`. Exporting `app.fetch` directly does NOT work —
+// Vercel calls the function as `(req, res)`, so a returned Response is ignored
+// and the request hangs forever. `vercel.json` rewrites every path here, so Hono
+// still sees the original `/sessions/*` paths.
 export default handle(app);

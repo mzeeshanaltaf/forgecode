@@ -1,4 +1,5 @@
 import { Polar } from "@polar-sh/sdk";
+import { HTTPClient } from "@polar-sh/sdk/lib/http";
 import { paymentsConfigSchema, type PaymentsConfig } from "./config";
 import { createCheckout, type CreateCheckoutInput } from "./checkout";
 import { ingestUsage, type IngestUsageInput } from "./ingestion";
@@ -26,9 +27,28 @@ export type PaymentsClient = {
  */
 export function createPaymentsClient(config: PaymentsConfig | unknown): PaymentsClient {
   const cfg = paymentsConfigSchema.parse(config);
+
+  // TEMP DIAGNOSTIC (remove after the Polar 401 is resolved): log exactly what
+  // the SDK puts on the wire so we can see, on Vercel, whether the Authorization
+  // header (and which other headers) actually leaves the function. A raw fetch
+  // with the same token returns 200 from Vercel, yet the SDK 401s — this shows
+  // the difference.
+  const httpClient = new HTTPClient();
+  httpClient.addHook("beforeRequest", (request) => {
+    const headers: Record<string, string> = {};
+    for (const [k, v] of request.headers) {
+      // Redact the bearer token to just its length + public prefix.
+      headers[k] =
+        k === "authorization" ? `<len ${v.length}, ${v.slice(0, 18)}…>` : JSON.stringify(v);
+    }
+    console.log("[polar-hook] ->", request.method, request.url, "| headers:", headers);
+    return request;
+  });
+
   const polar = new Polar({
     accessToken: cfg.accessToken,
     server: cfg.server,
+    httpClient,
   });
 
   return {
