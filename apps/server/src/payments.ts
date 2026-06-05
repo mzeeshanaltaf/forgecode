@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { createPaymentsClient, type PaymentsClient } from "@forgecode/payments";
 
 /**
@@ -20,6 +21,9 @@ export function tryGetPayments(): PaymentsClient | null {
   // produce a malformed `Authorization` header. Runs every call (not gated by
   // the memo) so it always appears for the request being debugged.
   const rawToken = process.env.POLAR_ACCESS_TOKEN;
+  const sha = rawToken
+    ? createHash("sha256").update(rawToken).digest("hex").slice(0, 12)
+    : undefined;
   console.log(
     "[polar-debug] token length:",
     rawToken?.length,
@@ -27,6 +31,8 @@ export function tryGetPayments(): PaymentsClient | null {
     JSON.stringify(rawToken?.slice(0, 12)),
     "| tail:",
     JSON.stringify(rawToken?.slice(-4)),
+    "| sha256[:12]:",
+    sha,
     "| server:",
     JSON.stringify(process.env.POLAR_SERVER),
   );
