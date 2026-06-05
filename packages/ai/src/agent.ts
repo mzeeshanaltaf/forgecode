@@ -106,12 +106,15 @@ export interface RunCodingTurnParams {
 
 export async function runCodingTurn(params: RunCodingTurnParams): Promise<Response> {
   const { history, cwd, mode = DEFAULT_MODE, model = DEFAULT_MODEL_ID, onError, onFinish } = params;
+  console.log("[turn] start", { model, mode, historyLen: history.length });
   const modelMessages = await convertToModelMessages(history);
+  console.log("[turn] converted messages, calling stream()");
 
   const result = await codingAgent.stream({
     messages: modelMessages,
     options: { cwd, mode, model },
   });
+  console.log("[turn] stream() resolved, returning streaming response");
 
   return result.toUIMessageStreamResponse({
     sendReasoning: true,
@@ -120,6 +123,7 @@ export async function runCodingTurn(params: RunCodingTurnParams): Promise<Respon
     onError(streamErr) {
       const err =
         streamErr instanceof Error ? streamErr : new Error(String(streamErr));
+      console.error("[turn] stream onError:", err.message, err.stack);
       if (onError) {
         void Promise.resolve(onError(err)).catch((handlerErr) => {
           console.error("runCodingTurn onError handler failed", handlerErr);
@@ -127,14 +131,15 @@ export async function runCodingTurn(params: RunCodingTurnParams): Promise<Respon
       }
       return err.message;
     },
-    onFinish: onFinish
-      ? async ({ responseMessage }) => {
-          try {
-            await onFinish({ responseMessage });
-          } catch (handlerErr) {
-            console.error("runCodingTurn onFinish handler failed", handlerErr);
-          }
+    onFinish: async ({ responseMessage }) => {
+      console.log("[turn] onFinish fired (stream complete)");
+      if (onFinish) {
+        try {
+          await onFinish({ responseMessage });
+        } catch (handlerErr) {
+          console.error("runCodingTurn onFinish handler failed", handlerErr);
         }
-      : undefined,
+      }
+    },
   });
 }
