@@ -8,6 +8,7 @@
     "dev": "bun --watch run src/index.ts",
     "start": "bun run src/index.ts",
     "build": "bun build src/index.ts --target bun --outdir dist",
+    "postinstall": "bun run db:generate",
     "db:generate": "bunx --bun prisma generate",
     "db:push": "bunx --bun prisma db push",
     "db:studio": "bunx --bun prisma studio"
