@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
+  "buildCommand": "bunx --bun prisma generate && bun build src/server.ts --target node --format esm --outfile dist/server.mjs --external pg --external \"@prisma/*\"",
   "outputDirectory": "public",
   "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }]
 }

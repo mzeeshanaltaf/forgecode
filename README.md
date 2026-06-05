@@ -222,15 +222,21 @@ cd apps/cli && bunx tsc --noEmit
 
 ## Deploying the server (Vercel)
 
-The server runs locally as a Bun process (`export default { port, fetch }`), but Vercel doesn't run Bun for serverless functions — it invokes a **Node.js function**. To bridge the two, the same Hono app ([`apps/server/src/app.ts`](apps/server/src/app.ts)) is also exposed through a Vercel function at [`apps/server/api/index.ts`](apps/server/api/index.ts), and [`apps/server/vercel.json`](apps/server/vercel.json) rewrites every request to it. Local dev is unaffected — `bun run dev:server` still uses the Bun entry ([`apps/server/src/index.ts`](apps/server/src/index.ts)).
+The server runs locally as a Bun process (`export default { port, fetch }`), but Vercel doesn't run Bun for serverless functions — it invokes a **Node.js function**, and Node can't execute this repo's raw-TypeScript source, the `@forgecode/*` workspace packages (whose `main` points straight at `.ts`), or the generated Prisma client (which uses explicit `.ts` import extensions). So the server is **bundled with Bun at build time** into a single Node-compatible file:
+
+- The build command runs `bun build src/server.ts … --outfile dist/server.mjs`, inlining the whole TypeScript graph into one `.mjs`. `pg` and `@prisma/*` are kept `--external` so they (and the Prisma runtime's assets) load from `node_modules` at runtime — Vercel's file tracer ships them alongside the function.
+- [`apps/server/api/index.js`](apps/server/api/index.js) is a tiny committed entry that re-exports the bundle, so Vercel always detects a function. Its handler is the same Hono app ([`apps/server/src/app.ts`](apps/server/src/app.ts)) exposed as a Web handler.
+- [`apps/server/vercel.json`](apps/server/vercel.json) rewrites every request to it.
+
+Local dev is unaffected — `bun run dev:server` still uses the Bun entry ([`apps/server/src/index.ts`](apps/server/src/index.ts)); `dist/` is git-ignored and only produced on Vercel.
 
 To deploy on Vercel as a monorepo project:
 
 1. **Root Directory** → `apps/server`. **Framework Preset** → **Other**. Leave the Install Command at its default so Vercel installs from the monorepo root (the `workspace:*` deps and `bun.lock` resolve there).
-2. **Environment Variables** → add every variable from [Configuration](#configuration) (`DATABASE_URL`, a provider API key, the `CLERK_*` vars, and any `POLAR_*` vars). The server reads `DATABASE_URL` at module load and throws without it, which surfaces on Vercel as `FUNCTION_INVOCATION_FAILED`.
-3. **Deploy.** The Prisma client is regenerated during install via the server's `postinstall` script, so the generated client is never committed and no build command is needed.
+2. **Environment Variables** → add every variable from [Configuration](#configuration) (`DATABASE_URL`, **every** provider API key, the `CLERK_*` vars, and any `POLAR_*` vars). Several are validated at module load — the model registry throws on a missing provider key and `db.ts` throws without `DATABASE_URL` — and either surfaces on Vercel as `FUNCTION_INVOCATION_FAILED` before any request is handled.
+3. **Deploy.** The build command also runs `prisma generate` first, so the generated client exists before bundling (it's never committed).
 
-`vercel.json` sets `"framework": null` so Vercel doesn't apply its auto-detected **Hono** preset (which would run a build and then demand a static `public/` output directory this API-only server never produces — the `No Output Directory named "public"` error). An empty [`apps/server/public/`](apps/server/public) directory plus `"outputDirectory": "public"` satisfies Vercel's output check; nothing is served from it because the rewrite routes every request to the function.
+`vercel.json` sets `"framework": null` so Vercel doesn't apply its auto-detected **Hono** preset (which demands a static `public/` output directory this API-only server never produces — the `No Output Directory named "public"` error). An empty [`apps/server/public/`](apps/server/public) directory plus `"outputDirectory": "public"` satisfies Vercel's output check; nothing is served from it because the rewrite routes every request to the function.
 
 The Node.js runtime (Vercel's default) is required — the routes use Prisma + `pg`, which can't run on the Edge runtime.
 
