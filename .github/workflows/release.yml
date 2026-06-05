@@ -1,0 +1,57 @@
+name: release
+
+# Build a self-contained `forgecode` binary per platform and attach them to a
+# GitHub Release. Triggered by pushing a version tag (e.g. `git tag v0.0.1 &&
+# git push origin v0.0.1`), or manually via the Actions tab.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build ${{ matrix.asset }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-latest
+            target: bun-darwin-arm64
+            asset: forgecode-darwin-arm64
+          - runner: macos-13
+            target: bun-darwin-x64
+            asset: forgecode-darwin-x64
+          - runner: ubuntu-latest
+            target: bun-linux-x64
+            asset: forgecode-linux-x64
+          - runner: ubuntu-24.04-arm
+            target: bun-linux-arm64
+            asset: forgecode-linux-arm64
+          - runner: windows-latest
+            target: bun-windows-x64
+            asset: forgecode-win32-x64.exe
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # Installs each runner's own os/cpu-gated `@opentui/core-<platform>`
+      # native package, so the compiled binary bundles the right native lib.
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build binary
+        run: bun build apps/cli/src/index.tsx --compile --target=${{ matrix.target }} --outfile ${{ matrix.asset }}
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.asset }}
+          fail_on_unmatched_files: true
