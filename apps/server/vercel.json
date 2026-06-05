@@ -3,5 +3,6 @@
   "framework": null,
   "buildCommand": "bunx --bun prisma generate && bun build src/server.ts --target node --format esm --outfile dist/server.mjs --external pg --external \"@prisma/*\"",
   "outputDirectory": "public",
+  "functions": { "api/index.js": { "maxDuration": 60 } },
   "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }]
 }
