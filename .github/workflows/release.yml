@@ -23,18 +23,23 @@ jobs:
           - runner: macos-latest
             target: bun-darwin-arm64
             asset: forgecode-darwin-arm64
+            archive: forgecode-darwin-arm64.tar.gz
           - runner: macos-13
             target: bun-darwin-x64
             asset: forgecode-darwin-x64
+            archive: forgecode-darwin-x64.tar.gz
           - runner: ubuntu-latest
             target: bun-linux-x64
             asset: forgecode-linux-x64
+            archive: forgecode-linux-x64.tar.gz
           - runner: ubuntu-24.04-arm
             target: bun-linux-arm64
             asset: forgecode-linux-arm64
+            archive: forgecode-linux-arm64.tar.gz
           - runner: windows-latest
             target: bun-windows-x64
-            asset: forgecode-win32-x64.exe
+            asset: forgecode-win32-x64
+            archive: forgecode-win32-x64.zip
     steps:
       - uses: actions/checkout@v4
 
@@ -47,8 +52,21 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # Compile to a fixed name; bun appends `.exe` on Windows automatically.
       - name: Build binary
-        run: bun build apps/cli/src/index.tsx --compile --target=${{ matrix.target }} --outfile ${{ matrix.asset }}
+        run: bun build apps/cli/src/index.tsx --compile --target=${{ matrix.target }} --outfile forgecode
+
+      # Compress the binary so the release download is ~3x smaller (the runtime
+      # is embedded, so the raw binary is ~120 MB but gzips to ~40 MB).
+      - name: Archive binary (tar.gz)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: tar -czf "${{ matrix.archive }}" forgecode
+
+      - name: Archive binary (zip)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path forgecode.exe -DestinationPath "${{ matrix.archive }}" -Force
 
       # Only publish on a tag push. A manual `workflow_dispatch` run has no tag,
       # so it validates the build cross-platform without attempting a release.
@@ -56,5 +74,5 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ matrix.asset }}
+          files: ${{ matrix.archive }}
           fail_on_unmatched_files: true

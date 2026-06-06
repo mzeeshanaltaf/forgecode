@@ -46,28 +46,32 @@ tag="$(curl -fsSL "$api" | grep -m1 '"tag_name"' | cut -d'"' -f4 || true)"
 [ -n "$tag" ] || err "could not resolve the latest release tag from ${api}"
 info "Latest release: ${tag}"
 
-url="https://github.com/${REPO}/releases/download/${tag}/${asset}"
+archive="${asset}.tar.gz"
+url="https://github.com/${REPO}/releases/download/${tag}/${archive}"
 
-# --- Download ----------------------------------------------------------------
-tmp="$(mktemp)"
-trap 'rm -f "$tmp"' EXIT
+# --- Download + extract ------------------------------------------------------
+# Assets are shipped gzip-compressed (~3x smaller download); the binary inside
+# is named `forgecode`.
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
 info "Downloading ${url}"
-curl -fSL --progress-bar "$url" -o "$tmp" || err "download failed for ${url}"
-chmod +x "$tmp"
+curl -fSL --progress-bar "$url" -o "${tmpdir}/${archive}" || err "download failed for ${url}"
+info "Extracting…"
+tar -xzf "${tmpdir}/${archive}" -C "$tmpdir" || err "failed to extract ${archive}"
+binsrc="${tmpdir}/${BIN_NAME}"
+[ -f "$binsrc" ] || err "archive ${archive} did not contain a ${BIN_NAME} binary"
+chmod +x "$binsrc"
 
 # --- Install onto PATH -------------------------------------------------------
 bindir="${HOME}/.local/bin"
 mkdir -p "$bindir"
 dest="${bindir}/${BIN_NAME}"
-if mv "$tmp" "$dest" 2>/dev/null; then
-  trap - EXIT
-else
+if ! mv "$binsrc" "$dest" 2>/dev/null; then
   warn "could not write to ${bindir}; falling back to /usr/local/bin (sudo)"
   bindir="/usr/local/bin"
   dest="${bindir}/${BIN_NAME}"
-  sudo mv "$tmp" "$dest" || err "failed to install to ${dest}"
+  sudo mv "$binsrc" "$dest" || err "failed to install to ${dest}"
   sudo chmod +x "$dest"
-  trap - EXIT
 fi
 info "Installed ${BIN_NAME} → ${dest}"
 
