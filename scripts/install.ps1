@@ -30,7 +30,7 @@ switch ($archRaw) {
 if ($archTag -ne 'x64') {
   throw "no Windows build is published for '$archTag' yet (only x64)."
 }
-$asset = "$BinName-win32-$archTag.exe"
+$asset = "$BinName-win32-$archTag.zip"
 Info "Detected win32-$archTag, asset: $asset"
 
 # --- Resolve latest release tag ----------------------------------------------
@@ -42,12 +42,22 @@ Info "Latest release: $tag"
 
 $url = "https://github.com/$Repo/releases/download/$tag/$asset"
 
-# --- Install onto PATH -------------------------------------------------------
+# --- Download + extract ------------------------------------------------------
+# Assets are shipped zip-compressed (~3x smaller download); the archive
+# contains forgecode.exe.
 $installDir = Join-Path $env:LOCALAPPDATA "Programs\forgecode"
 New-Item -ItemType Directory -Force -Path $installDir | Out-Null
 $dest = Join-Path $installDir "$BinName.exe"
+$tmpZip = Join-Path ([System.IO.Path]::GetTempPath()) $asset
 Info "Downloading $url"
-Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
+Invoke-WebRequest -Uri $url -OutFile $tmpZip -UseBasicParsing
+Info "Extracting..."
+try {
+  Expand-Archive -Path $tmpZip -DestinationPath $installDir -Force
+} finally {
+  Remove-Item $tmpZip -Force -ErrorAction SilentlyContinue
+}
+if (-not (Test-Path $dest)) { throw "archive $asset did not contain $BinName.exe" }
 Info "Installed $BinName -> $dest"
 
 # Add install dir to the user PATH if missing.
